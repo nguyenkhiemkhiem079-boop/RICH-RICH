@@ -22,6 +22,12 @@ Tạo revert commit cho commit dữ liệu sai, chạy lại `vl verify`, sau đ
 
 Workflow Cloudflare Pages cần secrets `CLOUDFLARE_API_TOKEN` và `CLOUDFLARE_ACCOUNT_ID`. Không commit secrets. Người vận hành phải tạo project Pages `vietlott-lab` và cấp token tối thiểu quyền.
 
+## GitHub Pages public web
+
+Workflow `.github/workflows/pages.yml` deploy thư mục `web/dist` lên GitHub Pages. Sau khi push lên `master`, vào **Repository Settings → Pages**, chọn **GitHub Actions** làm Source. URL dự kiến: `https://nguyenkhiemkhiem079-boop.github.io/RICH-RICH/`.
+
+Không mở `web/index.html` bằng `file://`; Vite cần HTTP server. Chạy local bằng `npm run dev` trong thư mục `web`.
+
 ## Pháp lý
 
 Chủ sở hữu cần tham vấn luật sư Việt Nam về việc xuất bản nội dung liên quan xổ số; tài liệu này không đưa ra kết luận pháp lý.
