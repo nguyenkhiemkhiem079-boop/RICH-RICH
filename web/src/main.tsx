@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GoogleGeminiEffect } from "./gemini-effect";
 import "./style.css";
 import "./analysis.css";
@@ -13,9 +13,10 @@ import { calculateDailyGuidance, dateFromKey } from "./daily-guidance";
 import { analyzeTuvi, summarizeTuvi } from "./tuvi-analysis";
 import { astro } from "iztro";
 import { bundleJackpotOdds, choose, jackpotOdds, matchDistribution, probabilityFraction } from "./probability";
+import { shuffleTarot, tarotDeck, type TarotCard } from "./tarot";
 
 const disclaimer = "Kết quả xổ số là ngẫu nhiên. Thống kê quá khứ không giúp dự đoán kỳ quay sau. Trang này chỉ mang tính tham khảo và giải trí, không liên kết với Vietlott. Chỉ dành cho người từ 18 tuổi trở lên. Hãy chơi có trách nhiệm.";
-const nav = ["Trang chủ", "Mega 6/45", "Power 6/55", "Lotto 5/35", "Bản đồ số", "Cấu trúc dữ liệu", "Lọc lịch sử", "Bộ số tham khảo", "Khám phá bản thân", "Năng lượng hôm nay", "Tử vi", "Bản đồ sao", "Kiểm tra bộ số", "Thống kê", "Máy tính Bao", "Backtest", "Kiến thức", "Nguồn dữ liệu & phương pháp"];
+const nav = ["Trang chủ", "Mega 6/45", "Power 6/55", "Lotto 5/35", "Bản đồ số", "Cấu trúc dữ liệu", "Lọc lịch sử", "Bộ số tham khảo", "Khám phá bản thân", "Năng lượng hôm nay", "Tử vi", "Bản đồ sao", "Tarot", "Kiểm tra bộ số", "Thống kê", "Máy tính Bao", "Backtest", "Kiến thức", "Nguồn dữ liệu & phương pháp"];
 type Draw = { draw_id: number; draw_date: string; numbers: number[]; special?: number | null };
 
 function App() {
@@ -36,6 +37,7 @@ function Page({ page }: { page: string }) {
   if (page === "Khám phá bản thân") return <ExpandedNumerologyProfile />;
   if (page === "Năng lượng hôm nay") return <DailyGuidancePage />;
   if (page === "Bản đồ sao") return <NatalChartProfile />;
+  if (page === "Tarot") return <TarotPage />;
   if (page === "Tử vi") return <TuviProfile />;
   if (page === "Bản đồ số") return <NumberMap />;
   if (page === "Cấu trúc dữ liệu") return <Structure />;
@@ -220,6 +222,25 @@ function DailyGuidancePage() {
       <p className="method-note">{guidance.note} Gợi ý này được tạo ổn định theo ngày/hồ sơ; không phải dự báo kết quả quay và không làm tăng xác suất trúng. Ngày khác có thể cho chủ đề và chữ số khác.</p>
       <button onClick={() => navigator.clipboard?.writeText(recommendations.map(n => String(n.value).padStart(2, "0")).join(" - "))}>Sao chép bộ số</button>
     </>}
+  </section>;
+}
+
+type TarotPull = { card: TarotCard; reversed: boolean };
+function TarotCardBack({ className = "" }: { className?: string }) { return <div className={`tarot-card-face tarot-card-back ${className}`}><span className="tarot-back-mark">✧</span><span className="tarot-back-name">VIETLOTT LAB<br/><small>ARCANA · 78</small></span></div>; }
+function TarotCardFront({ pull }: { pull: TarotPull }) { return <div className={`tarot-card-face tarot-card-front${pull.reversed ? " is-reversed" : ""}`}><small>{pull.card.arcana}</small><span className="tarot-card-symbol">{pull.card.symbol}</span><strong>{pull.card.name}</strong><small>{pull.reversed ? "NGƯỢC" : "XUÔI"}</small></div>; }
+function TarotPage() {
+  const [question,setQuestion]=useState("");const [spread,setSpread]=useState<"single"|"three">("three");const [phase,setPhase]=useState<"welcome"|"shuffling"|"pick"|"reading">("welcome");
+  const [cards,setCards]=useState<TarotPull[]>([]);const [selected,setSelected]=useState<number[]>([]);const [error,setError]=useState("");const shuffleTimer=useRef<number|undefined>(undefined);const required=spread==="three"?3:1;
+  useEffect(()=>()=>{if(shuffleTimer.current!==undefined)window.clearTimeout(shuffleTimer.current);},[]);
+  const start=()=>{if(question.trim().length>200){setError("Câu hỏi tối đa 200 ký tự.");return;}setError("");setSelected([]);setPhase("shuffling");const pulled=shuffleTarot().slice(0,12).map(card=>({card,reversed:Math.random()<.5}));setCards(pulled);shuffleTimer.current=window.setTimeout(()=>setPhase("pick"),1150);};
+  const toggle=(index:number)=>{setSelected(current=>current.includes(index)?current.filter(i=>i!==index):current.length<required?[...current,index]:current);};
+  const positions=spread==="three"?["Quá khứ · điều dẫn đến đây","Hiện tại · điều đang nổi bật","Hướng đi · điều cần cân nhắc"]:["Thông điệp để suy ngẫm"];
+  const reset=()=>{if(shuffleTimer.current!==undefined)window.clearTimeout(shuffleTimer.current);setPhase("welcome");setCards([]);setSelected([]);setError("");};
+  return <section className="info tarot-page"><div className="tarot-sky"><div className="tarot-orbit orbit-one"/><div className="tarot-orbit orbit-two"/><span className="tarot-kicker">TAROT · TRẢI BÀI TƯƠNG TÁC</span><h2>Một khoảng lặng.<br/><em>Một góc nhìn mới.</em></h2><p>Đặt câu hỏi, xáo bộ bài 78 lá và tự chọn lá. Dùng trải bài như gợi ý để suy ngẫm — không phải lời tiên tri hay lời khuyên chuyên môn.</p></div>
+    {phase==="welcome"&&<div className="tarot-setup"><label className="tarot-question">Câu hỏi của bạn <span>{question.length}/200</span><textarea maxLength={200} value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Ví dụ: Mình có thể tập trung vào điều gì trong giai đoạn này?" rows={3}/></label><fieldset className="tarot-spreads"><legend>Chọn kiểu trải bài</legend><label className={spread==="single"?"is-active":""}><input type="radio" checked={spread==="single"} onChange={()=>setSpread("single")}/><span>✦</span><strong>Một lá</strong><small>Một chủ đề để chiêm nghiệm</small></label><label className={spread==="three"?"is-active":""}><input type="radio" checked={spread==="three"} onChange={()=>setSpread("three")}/><span>☽ · ☼ · ☾</span><strong>Dòng chảy thời gian</strong><small>Quá khứ · hiện tại · hướng đi</small></label></fieldset><button className="tarot-primary" onClick={start}>✧　Xáo bài & bắt đầu</button><p className="tarot-privacy">Không cần đăng nhập. Câu hỏi và lượt trải bài chỉ nằm trong phiên trình duyệt này.</p></div>}
+    {phase==="shuffling"&&<div className="tarot-shuffling" aria-live="polite"><div className="shuffle-stack"><TarotCardBack/><TarotCardBack/><TarotCardBack/></div><h3>Đang xáo bài…</h3><p>Giữ câu hỏi trong tâm trí, rồi chọn {required} lá.</p></div>}
+    {phase==="pick"&&<div className="tarot-pick"><div className="tarot-section-title"><div><p className="eyebrow">BỘ BÀI WAITE · 78 LÁ</p><h3>Chọn {required} lá bài</h3><p>Đã chọn {selected.length}/{required}{question.trim()?` · Câu hỏi: “${question.trim()}”`:" · Bạn có thể để câu hỏi trống và rút một thông điệp chung."}</p></div><button className="secondary-button" onClick={start}>Xáo lại</button></div><div className="tarot-deck-grid">{cards.map((pull,index)=><button key={pull.card.id} className={`tarot-card-button${selected.includes(index)?" is-selected":""}`} aria-label={`Chọn lá bài úp số ${index+1}`} aria-pressed={selected.includes(index)} onClick={()=>toggle(index)}><span className="tarot-card-inner"><TarotCardBack/><span className="tarot-card-face tarot-card-front tarot-card-front-hidden"><span className="tarot-card-symbol">✧</span></span></span><small className="tarot-card-index">{String(index+1).padStart(2,"0")}</small></button>)}</div><button className="tarot-primary" disabled={selected.length!==required} onClick={()=>setPhase("reading")}>Lật {required} lá đã chọn</button></div>}
+    {phase==="reading"&&<div className="tarot-reading"><div className="tarot-section-title"><div><p className="eyebrow">TRẢI BÀI CỦA BẠN</p><h3>Một cách đọc để tự suy ngẫm</h3>{question.trim()&&<p className="tarot-user-question">“{question.trim()}”</p>}</div><button className="secondary-button" onClick={reset}>Trải bài mới</button></div><div className={`tarot-results spread-${spread}`}>{selected.map((index,slot)=>{const pull=cards[index];return <article className="tarot-result" key={pull.card.id}><p className="tarot-position">{positions[slot]}</p><div className="tarot-reveal-card"><div className="tarot-card-inner is-flipped"><TarotCardBack/><TarotCardFront pull={pull}/></div></div><h4>{pull.card.name} <small>{pull.reversed?"· Lá ngược":"· Lá xuôi"}</small></h4><p>{pull.reversed?pull.card.reversed:pull.card.upright}</p><blockquote>{pull.card.reflection}</blockquote></article>;})}</div><aside className="tarot-disclaimer"><strong>Gợi ý đọc bài:</strong> hãy giữ lại điều hữu ích, bỏ qua điều không phù hợp. Tarot là thực hành biểu tượng/giải trí; không dự đoán chắc chắn tương lai và không thay thế tư vấn y tế, pháp lý hay tài chính.</aside><button className="tarot-primary" onClick={reset}>✧　Xào bài cho câu hỏi khác</button></div>}
   </section>;
 }
 
