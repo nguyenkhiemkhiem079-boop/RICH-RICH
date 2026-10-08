@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { GoogleGeminiEffect } from "./gemini-effect";
 import "./style.css";
 import "./analysis.css";
+import "./dashboard.css";
 
 const disclaimer = "Kết quả xổ số là ngẫu nhiên. Thống kê quá khứ không giúp dự đoán kỳ quay sau. Trang này chỉ mang tính tham khảo và giải trí, không liên kết với Vietlott. Chỉ dành cho người từ 18 tuổi trở lên. Hãy chơi có trách nhiệm.";
 const nav = ["Trang chủ", "Mega 6/45", "Power 6/55", "Lotto 5/35", "Bản đồ số", "Cấu trúc dữ liệu", "Lọc lịch sử", "Bộ số tham khảo", "Kiểm tra bộ số", "Thống kê", "Máy tính Bao", "Backtest", "Kiến thức", "Nguồn dữ liệu & phương pháp"];
@@ -12,10 +13,12 @@ function App() {
   const [page, setPage] = useState(decodeURIComponent(location.hash.slice(1) || "Trang chủ"));
   const eligible = localStorage.getItem("vl-18-plus") === "yes";
   useEffect(() => { const update = () => setPage(decodeURIComponent(location.hash.slice(1) || "Trang chủ")); addEventListener("hashchange", update); return () => removeEventListener("hashchange", update); }, []);
+  const research = ["Trang chủ", "Thống kê", "Cấu trúc dữ liệu", "Bộ số tham khảo", "Lọc lịch sử"];
+  const learn = ["Kiến thức", "Nguồn dữ liệu & phương pháp", "Backtest"];
+  const icon = (item:string) => ({"Trang chủ":"⌂","Thống kê":"▥","Cấu trúc dữ liệu":"⌁","Bộ số tham khảo":"✧","Lọc lịch sử":"◴","Kiến thức":"▢","Nguồn dữ liệu & phương pháp":"▤","Backtest":"✓"}[item] || "•");
+  const menu = (items:string[]) => items.map(item => <a className={page === item ? "active" : ""} href={`#${item}`} key={item}><span>{icon(item)}</span>{item}</a>);
   return <>{!eligible && <section className="gate"><h1>Xác nhận độ tuổi</h1><p>Nội dung chỉ dành cho người từ 18 tuổi trở lên.</p><button onClick={() => { localStorage.setItem("vl-18-plus", "yes"); location.reload(); }}>Tôi từ 18 tuổi trở lên</button></section>}
-    <header><p className="eyebrow">VIETLOTT LAB · DỮ LIỆU CÓ THỂ KIỂM TRA</p><h1>Nhìn rõ lịch sử.<br /><em>Hiểu đúng xác suất.</em></h1><p>Kho lưu trữ kết quả và thống kê trung tính cho các bộ số Vietlott.</p><nav>{nav.map((item) => <a href={`#${item}`} key={item}>{item}</a>)}</nav></header>
-    {page === "Trang chủ" && <section className="hero-effect"><GoogleGeminiEffect /><div className="hero-copy"><span>THỐNG KÊ · PHƯƠNG PHÁP · MINH BẠCH</span><h2>Không dự đoán.<br />Chỉ cung cấp bằng chứng.</h2></div></section>}
-    <main><Page page={page} /></main><footer>{disclaimer}</footer></>;
+    <div className="app-shell"><aside className="sidebar"><div className="brand"><span className="brand-mark">V</span><div><strong>VIETLOTT LAB</strong><small>DATA RESEARCH</small></div></div><p className="side-label">KHÔNG GIAN NGHIÊN CỨU</p><nav className="side-nav">{menu(research)}</nav><div className="side-divider" /><p className="side-label">TÌM HIỂU THÊM</p><nav className="side-nav">{menu(learn)}</nav><div className="side-footer">Dữ liệu được cập nhật tự động<br /><span>● Hệ thống đang hoạt động</span></div></aside><div className="app-content"><header><div className="topline"><span className="eyebrow">VIETLOTT LAB · DỮ LIỆU CÓ THỂ KIỂM TRA</span><span className="live-pill">● LIVE DATA</span></div><h1>Nhìn rõ lịch sử.<br /><em>Hiểu đúng xác suất.</em></h1><p>Kho lưu trữ kết quả và thống kê trung tính cho các bộ số Vietlott.</p><nav className="game-nav">{["Mega 6/45","Power 6/55","Lotto 5/35"].map(item => <a href={`#${item}`} key={item}>{item}</a>)}</nav></header>{page === "Trang chủ" && <section className="hero-effect"><GoogleGeminiEffect /><div className="hero-copy"><span>THỐNG KÊ · PHƯƠNG PHÁP · MINH BẠCH</span><h2>Không dự đoán.<br />Chỉ cung cấp bằng chứng.</h2></div></section>}<main><Page page={page} /></main><footer>{disclaimer}</footer></div></div></>;
 }
 
 function Page({ page }: { page: string }) {
