@@ -13,7 +13,8 @@ export type DailyGuidance = {
   note: string;
 };
 
-const dayRulers = ["Mặt Trăng", "Sao Hỏa", "Sao Thủy", "Mặt Trời", "Sao Mộc", "Sao Kim", "Sao Thổ"];
+// Chaldean weekday rulers in Sunday-to-Saturday order.
+const dayRulers = ["Mặt Trời", "Mặt Trăng", "Sao Hỏa", "Sao Thủy", "Sao Mộc", "Sao Kim", "Sao Thổ"];
 
 export function dateFromKey(dateKey: string): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
@@ -30,23 +31,24 @@ export function calculateDailyGuidance(dateKey: string, birth?: Date): DailyGuid
   const dateDigits = `${dateKey.slice(0, 4)}${dateKey.slice(5, 7)}${dateKey.slice(8, 10)}`;
   const dayNumber = reduceNumerology([...dateDigits].reduce((sum, digit) => sum + Number(digit), 0));
   const targetYear = utcNoon.getUTCFullYear();
+  const localNoonUtc = new Date(Date.UTC(targetYear, utcNoon.getUTCMonth(), utcNoon.getUTCDate(), 5));
   const personalYear = birth && Number.isFinite(birth.getTime())
     ? reduceNumerology(birth.getMonth() + 1 + birth.getDate() + targetYear)
     : null;
   const personalDay = personalYear === null ? null : reduceNumerology(personalYear + utcNoon.getUTCDate());
-  const placements = calculatePlacements(utcNoon);
+  const placements = calculatePlacements(localNoonUtc);
   const aspects = calculateAspects(placements);
   const sunSign = placements.find(item => item.name === "Mặt Trời")!.sign;
   const moonSign = placements.find(item => item.name === "Mặt Trăng")!.sign;
   const weekday = utcNoon.getUTCDay();
-  const luckyNumbers = [...new Set([dayNumber, personalDay, weekday + 1, ...aspects.slice(0, 2).map(item => reduceNumerology(item.angle))]
+  const luckyNumbers = [...new Set([dayNumber, personalDay]
     .filter((value): value is number => value !== null && value >= 1 && value <= 9))];
   if (!luckyNumbers.length) luckyNumbers.push(dayNumber);
   const themes = [
-    `Ngày số ${dayNumber}: chủ đề thần số học theo phép rút gọn ngày dương lịch.`,
-    `Ngày ${dateKey} (UTC): Mặt Trời ở ${sunSign}, Mặt Trăng ở ${moonSign}.`,
-    `Thứ trong tuần gắn với ${dayRulers[weekday]} theo quy ước chiêm tinh cổ điển.` ,
-    aspects.length ? `Góc chiếu nổi bật theo orb cấu hình: ${aspects.slice(0, 2).map(item => `${item.first}–${item.second} ${item.type} (${item.orb}°)`).join("; ")}.` : "Không có góc chiếu chính trong orb cấu hình đang dùng.",
+    `Ngày số ${dayNumber}: theo một quy ước thần số học, tổng các chữ số của ngày ${dateKey} rút gọn thành ${dayNumber}; đây là chủ đề biểu tượng, không phải dự báo.`,
+    `Ngày ${dateKey} lúc 12:00 giờ Việt Nam (05:00 UTC), phép tính địa tâm cho Mặt Trời ở ${sunSign} và Mặt Trăng ở ${moonSign}; thời điểm khác trong ngày có thể làm thay đổi vị trí Mặt Trăng.`,
+    `Thứ trong tuần gắn với ${dayRulers[weekday]} theo quy ước chiêm tinh cổ điển; đây là liên hệ văn hóa, không phải quan hệ nhân quả.`,
+    aspects.length ? `Các góc chiếu gần góc chuẩn nhất theo orb cấu hình: ${aspects.slice(0, 2).map(item => `${item.first}–${item.second} ${item.type} (orb ${item.orb}°)`).join("; ")}.` : "Không có góc chiếu chính nằm trong ngưỡng orb cấu hình tại thời điểm tính.",
   ];
   return { dateKey, dayNumber, personalDay, planetaryDay: dayRulers[weekday], placements, aspects, luckyNumbers, themes,
     note: "Đây là diễn giải biểu tượng dựa trên một quy ước thần số học và chiêm tinh phương Tây; không dự đoán sự kiện thực tế. Số may mắn chỉ được đề xuất để cá nhân hóa/giải trí, mọi bộ số Vietlott hợp lệ vẫn có xác suất như nhau." };

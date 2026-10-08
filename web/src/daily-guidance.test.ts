@@ -17,5 +17,10 @@ describe("daily guidance", () => {
   });
   it("constructs day-specific ephemeris time at UTC noon", () => {
     expect(dateFromKey("2026-10-08").toISOString()).toBe("2026-10-08T12:00:00.000Z");
+    expect(calculateDailyGuidance("2026-10-08").themes[1]).toContain("12:00 giờ Việt Nam (05:00 UTC)");
+  });
+  it("uses the traditional Sunday-to-Saturday planetary weekday sequence", () => {
+    expect(calculateDailyGuidance("2026-10-04").planetaryDay).toBe("Mặt Trời");
+    expect(calculateDailyGuidance("2026-10-08").planetaryDay).toBe("Sao Mộc");
   });
 });

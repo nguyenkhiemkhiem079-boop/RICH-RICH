@@ -1,10 +1,11 @@
 export type Pinnacle = { index: number; number: number; challenge: number; startAge: number; endAge: number; year: number; formula: string };
 export type BirthArrow = { name: string; digits: number[]; present: boolean; meaning: string };
+export type KarmicDebtEvidence = { number: number; source: string; formula: string };
 export type NumerologyChart = {
   lifePath: number; birthday: number; expression: number; soulUrge: number;
   personality: number; maturity: number; personalYear: number; attitude: number;
   balance: number; lifePathBridge: number; expressionBridge: number;
-  karmicLessons: number[]; karmicDebt: number[]; arrows: BirthArrow[]; pinnacles: Pinnacle[];
+  karmicLessons: number[]; karmicDebt: number[]; karmicDebtEvidence: KarmicDebtEvidence[]; arrows: BirthArrow[]; pinnacles: Pinnacle[];
   yearCycle: Array<{ year: number; number: number }>;
   steps: Record<string, string>;
 };
@@ -59,8 +60,16 @@ export function calculateNumerology(name: string, birth: Date, targetYear = new 
 
   const nameDigits = new Set([...fullName].map(letterValue));
   const karmicLessons = Array.from({ length: 9 }, (_, i) => i + 1).filter(n => !nameDigits.has(n));
-  const karmicDebt = [...new Set([lifePathSum, expressionSum, vowelSum, consonantSum, month + day, personalYearSum]
-    .filter(n => [13, 14, 16, 19].includes(n)))].sort((a, b) => a - b);
+  // Only report a compound debt when a selected core-number total is exactly
+  // 13, 14, 16, or 19 before reduction; do not flag arbitrary intermediate sums.
+  const karmicDebtEvidence = [
+    { number: lifePathSum, source: "Đường đời", formula: `${[...dateDigits].join(" + ")} = ${lifePathSum}` },
+    { number: day, source: "Ngày sinh", formula: `${day}` },
+    { number: expressionSum, source: "Biểu đạt", formula: `Tổng chữ cái tên = ${expressionSum}` },
+    { number: vowelSum, source: "Linh hồn", formula: `Tổng nguyên âm AEIOU = ${vowelSum}` },
+    { number: consonantSum, source: "Nhân cách", formula: `Tổng phụ âm = ${consonantSum}` },
+  ].filter(item => [13, 14, 16, 19].includes(item.number));
+  const karmicDebt = [...new Set(karmicDebtEvidence.map(item => item.number))].sort((a, b) => a - b);
 
   const arrowDefinitions: Array<[string, number[]]> = [
     ["Thực tế", [1, 4, 7]], ["Cảm xúc", [2, 5, 8]], ["Trí tuệ", [3, 6, 9]],
@@ -86,14 +95,16 @@ export function calculateNumerology(name: string, birth: Date, targetYear = new 
   const pinnacles = pinnacleData.map(([number, challenge, startAge, endAge, startYear, formula], i) => ({
     index: i + 1, number, challenge, startAge, endAge, year: startYear, formula,
   }));
-  const yearCycle = Array.from({ length: 9 }, (_, i) => {
-    const cycleYear = targetYear - 4 + i;
+  const firstCycleYear = Math.max(1, targetYear - 4);
+  const cycleLength = Math.min(9, 10000 - firstCycleYear);
+  const yearCycle = Array.from({ length: cycleLength }, (_, i) => {
+    const cycleYear = firstCycleYear + i;
     return { year: cycleYear, number: reducePart(month + day + cycleYear) };
   });
 
   return {
     lifePath, birthday, expression, soulUrge, personality, maturity, personalYear,
-    attitude, balance, lifePathBridge, expressionBridge, karmicLessons, karmicDebt, arrows, pinnacles, yearCycle,
+    attitude, balance, lifePathBridge, expressionBridge, karmicLessons, karmicDebt, karmicDebtEvidence, arrows, pinnacles, yearCycle,
     steps: {
       lifePath: `${[...dateDigits].join(" + ")} = ${lifePathSum} → ${lifePath}`,
       birthday: `${day} → ${birthday}`,

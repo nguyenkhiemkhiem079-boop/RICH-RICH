@@ -35,6 +35,22 @@ const starNotes: Record<string, string> = {
   "Phá Quân": "truyền thống gắn với đổi mới, tái cấu trúc và nhu cầu tự chủ",
 };
 
+const mutagenNotes: Record<string, string> = {
+  "禄": "Hóa Lộc: truyền thống gắn với nguồn lực, cơ hội hoặc sự gia tăng; không cam kết tiền tài.",
+  "Lộc": "Hóa Lộc: truyền thống gắn với nguồn lực, cơ hội hoặc sự gia tăng; không cam kết tiền tài.",
+  "权": "Hóa Quyền: truyền thống gắn với quyền chủ động, trách nhiệm hoặc sức ảnh hưởng.",
+  "Quyền": "Hóa Quyền: truyền thống gắn với quyền chủ động, trách nhiệm hoặc sức ảnh hưởng.",
+  "科": "Hóa Khoa: truyền thống gắn với danh dự, học tập, trợ lực hoặc cách hóa giải.",
+  "Khoa": "Hóa Khoa: truyền thống gắn với danh dự, học tập, trợ lực hoặc cách hóa giải.",
+  "忌": "Hóa Kỵ: truyền thống gắn với vướng mắc, tập trung hoặc điều cần thận trọng; không mặc định là tai họa.",
+  "Kỵ": "Hóa Kỵ: truyền thống gắn với vướng mắc, tập trung hoặc điều cần thận trọng; không mặc định là tai họa.",
+};
+
+export function explainMutagen(value: string): string {
+  const normalized = value.replace(/^.*?Hóa\s*/i, "").trim();
+  return mutagenNotes[normalized] ?? `Tứ hóa “${value}” theo dữ liệu an sao của iztro; ý nghĩa cần xét cùng toàn lá số và trường phái.`;
+}
+
 function starsOf(palace: FunctionalPalace) {
   return [...palace.majorStars, ...palace.minorStars, ...palace.adjectiveStars];
 }
@@ -60,9 +76,9 @@ export function analyzeTuvi(chart: FunctionalAstrolabe): TuviInsight[] {
     ].join(" · ");
     insights.push({
       title: `Cung ${name}`,
-      text: `${topic} ${starText} Đây là ngôn ngữ biểu tượng của Tử Vi Đẩu Số, không phải kết luận thực chứng về con người hay tương lai.`,
-      evidence,
-      tone: mutagens.length ? "support" : selected.length ? "neutral" : "consider",
+      text: `${topic} ${starText} ${mutagens.length ? mutagens.map(explainMutagen).join(" ") : "Không có tứ hóa được ghi nhận tại cung này trong dữ liệu thư viện."} Đây là ngôn ngữ biểu tượng của Tử Vi Đẩu Số, không phải kết luận thực chứng về con người hay tương lai.`,
+      evidence: `${evidence} · Cách đọc: kết hợp cung, chính tinh, độ sáng và tứ hóa; đây không phải luận toàn diện mọi cách cục.`,
+      tone: selected.length ? "neutral" : "consider",
     });
   }
   return insights;
@@ -70,15 +86,15 @@ export function analyzeTuvi(chart: FunctionalAstrolabe): TuviInsight[] {
 
 export function summarizeTuvi(chart: FunctionalAstrolabe, insights: TuviInsight[]) {
   const life = chart.palaces.find(p => p.name === "Mệnh");
-  const body = chart.palaces.find(p => p.name === "Thân");
+  const body = chart.palaces.find(p => p.isBodyPalace);
   const money = chart.palaces.find(p => p.name === "Tài Bạch");
   const career = chart.palaces.find(p => p.name === "Quan Lộc");
   const lifeStars = life?.majorStars.map(star => star.name).filter(Boolean) ?? [];
   const bodyName = body?.name ?? "không xác định";
-  const highlighted = insights.filter(item => item.tone === "support").slice(0, 2).map(item => item.title);
+  const highlighted = insights.filter(item => item.evidence.includes("Tứ hóa gắn sao:") && !item.evidence.includes("Không ghi nhận sao tứ hóa")).slice(0, 2).map(item => item.title);
   return [
     { title: "Khung lá số", text: `Lá số ${chart.gender}, sinh ${chart.solarDate} (${chart.lunarDate}), ${chart.time} · ${chart.chineseDate}. Mệnh cục: ${chart.fiveElementsClass}; Mệnh chủ ${chart.soul}; Thân chủ ${chart.body}. Đây là thông số an lá số, không phải đánh giá tốt/xấu.` },
-    { title: "Cung Mệnh & Thân", text: `Cung Mệnh có ${lifeStars.length ? lifeStars.join(", ") : "không có chính tinh"}; cung Thân đóng tại ${bodyName}. Theo từ điển biểu tượng đã chọn: ${lifeStars.map(star => starNotes[star]).filter(Boolean).join("; ") || "cần xem tam phương tứ chính và đối cung"}.` },
+    { title: "Cung Mệnh & Thân", text: `Cung Mệnh có ${lifeStars.length ? lifeStars.join(", ") : "không có chính tinh"}; cung Thân an tại cung ${bodyName}. Theo từ điển biểu tượng đã chọn: ${lifeStars.map(star => starNotes[star]).filter(Boolean).join("; ") || "cần xem tam phương tứ chính và đối cung"}. Đây là tóm tắt một phần, không thay thế việc xét toàn cục.` },
     { title: "Công việc & nguồn lực", text: `Quan Lộc: ${career?.majorStars.map(star => star.name).join(", ") || "không có chính tinh"}. Tài Bạch: ${money?.majorStars.map(star => star.name).join(", ") || "không có chính tinh"}. Đây là hai cung để đọc chủ đề nghề nghiệp và cách quản trị nguồn lực theo truyền thống, không phải dự báo thành công hay tiền bạc.` },
     { title: "Điểm để tự chiêm nghiệm", text: highlighted.length ? `${highlighted.join(" và ")} có ghi nhận sao mang tứ hóa theo dữ liệu lá số. Hãy xem đây là gợi ý để suy ngẫm về lựa chọn và thói quen, không phải lời tiên đoán.` : "Không có tứ hóa tại các cung đang xét theo dữ liệu thư viện; không nên suy ra tốt/xấu chỉ từ một dấu hiệu đơn lẻ." },
   ];

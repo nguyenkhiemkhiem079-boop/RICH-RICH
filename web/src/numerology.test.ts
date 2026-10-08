@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculateNumerology, reduceNumerology } from "./numerology";
+import { explainNumerologyMetric, explainPinnacle, explainPersonalYear } from "./numerology-interpretations";
 import { personalNumbers } from "./personal-numbers";
 import { bundleJackpotOdds, choose, jackpotOdds, matchDistribution, probabilityFraction } from "./probability";
 
@@ -26,6 +27,21 @@ describe("numerology", () => {
     expect(result.pinnacles).toHaveLength(4);
     expect(result.arrows).toHaveLength(8);
     expect(result.karmicLessons.every(value => value >= 1 && value <= 9)).toBe(true);
+  });
+  it("reports compound debt markers only when a selected core total exactly matches the convention", () => {
+    expect(calculateNumerology("A", new Date(1990, 3, 9), 2026).karmicDebt).toEqual([]);
+    const debt = calculateNumerology("ABCDAB", new Date(1990, 3, 9), 2026);
+    expect(debt.karmicDebt).toContain(13);
+    expect(debt.karmicDebtEvidence.some(item => item.number === 13 && item.source === "Biểu đạt")).toBe(true);
+  });
+  it("provides qualified explanations for each numeric interpretation", () => {
+    expect(explainNumerologyMetric("Đường đời", 11)).toContain("không phải kết luận");
+    expect(explainPinnacle(8, 4)).toContain("xây dựng nề nếp");
+    expect(explainPersonalYear(5)).toContain("năm đã chọn");
+  });
+  it("keeps the nine-year display inside supported calendar years at boundaries", () => {
+    expect(calculateNumerology("A",new Date(2000,0,1),1).yearCycle.map(item=>item.year)).toEqual([1,2,3,4,5,6,7,8,9]);
+    expect(calculateNumerology("A",new Date(2000,0,1),9999).yearCycle.map(item=>item.year)).toEqual([9995,9996,9997,9998,9999]);
   });
   it("returns unique numbers with provenance in legal range", () => {
     const chart = calculateNumerology("Nguyễn Thị Đặng", new Date(1990, 4, 23), 2026);
