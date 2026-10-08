@@ -2,6 +2,7 @@ import argparse
 import json
 from pathlib import Path
 
+from pipeline.stats import export_stats
 from pipeline.validation import validate_draws
 
 
@@ -24,6 +25,12 @@ def main() -> None:
                 print(f"{game}: PASS ({len(draws)} draws)")
         if failed:
             raise SystemExit(1)
+        return
+    if args.command == "stats":
+        if args.game != "mega":
+            raise SystemExit("stats blocked: dataset must pass validation first")
+        result = export_stats("mega", Path("data/curated/mega.json"), Path("data/derived/stats_mega.json"), 45)
+        print(f"mega: PASS ({result['n_draws']} draws)")
         return
     print(f"{args.command}: not implemented")
 
