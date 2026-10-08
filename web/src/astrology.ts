@@ -1,0 +1,4 @@
+import * as Astronomy from "astronomy-engine";
+export type Placement={name:string;longitude:number;sign:string;degree:number};
+const signs=["Bạch Dương","Kim Ngưu","Song Tử","Cự Giải","Sư Tử","Xử Nữ","Thiên Bình","Bọ Cạp","Nhân Mã","Ma Kết","Bảo Bình","Song Ngư"];
+export function calculatePlacements(date:Date):Placement[]{const bodies:[string,Astronomy.Body][]=[["Mặt Trời",Astronomy.Body.Sun],["Mặt Trăng",Astronomy.Body.Moon],["Sao Thủy",Astronomy.Body.Mercury],["Sao Kim",Astronomy.Body.Venus],["Sao Hỏa",Astronomy.Body.Mars],["Sao Mộc",Astronomy.Body.Jupiter],["Sao Thổ",Astronomy.Body.Saturn]];return bodies.map(([name,body])=>{const longitude=((Astronomy.EclipticLongitude(body,date)%360)+360)%360;const index=Math.floor(longitude/30);return {name,longitude,sign:signs[index],degree:Number((longitude%30).toFixed(2))};});}
