@@ -11,6 +11,7 @@ import { calculatePlacements } from "./astrology";
 import { calculateAspects, localBirthToUtc } from "./astrology";
 import { vietnameseLunar } from "./lunar";
 import { calculateDailyGuidance, dateFromKey } from "./daily-guidance";
+import { analyzeTuvi, summarizeTuvi } from "./tuvi-analysis";
 import { astro } from "iztro";
 import { bundleJackpotOdds, choose, jackpotOdds, matchDistribution, probabilityFraction } from "./probability";
 
@@ -158,7 +159,66 @@ function DailyGuidancePage() {
 }
 
 function AstrologyProfile(){const [birthTime,setBirthTime]=useState("");const [offset,setOffset]=useState(420);const [result,setResult]=useState<ReturnType<typeof calculatePlacements>|null>(null);const [lunar,setLunar]=useState<ReturnType<typeof vietnameseLunar>|null>(null);const [error,setError]=useState("");const submit=()=>{try{const d=localBirthToUtc(birthTime,offset);setResult(calculatePlacements(d));setLunar(vietnameseLunar(new Date(d.getTime()+offset*60000)));setError("");}catch(e){setError(e instanceof Error?e.message:"Không thể tính bản đồ sao.");}};const aspects=result?calculateAspects(result):[];return <section className="info"><p className="eyebrow">CHIÊM TINH TÂY · TỌA ĐỘ THIÊN VĂN TÍNH CỤC BỘ</p><h2>Bản đồ sao theo thời điểm sinh</h2><p>Nhập chính xác ngày giờ địa phương và UTC offset. Kết quả là kinh độ hoàng đạo địa tâm; chưa tính cung mọc/12 nhà vì cần tọa độ nơi sinh và cấu hình hệ nhà.</p><div className="generator-controls"><label>Ngày giờ sinh tại nơi sinh <input type="datetime-local" value={birthTime} onChange={e=>setBirthTime(e.target.value)} /></label><label>UTC offset (phút) <input type="number" min="-840" max="840" value={offset} onChange={e=>setOffset(Number(e.target.value))} /></label></div><button onClick={submit}>Lập bản đồ sao</button>{error&&<p className="notice">{error}</p>}{result&&<><div className="table-wrap"><table><thead><tr><th>Thiên thể</th><th>Cung</th><th>Độ</th><th>Kinh độ hoàng đạo</th><th>Chuyển động</th></tr></thead><tbody>{result.map(p=><tr key={p.name}><td>{p.name}</td><td>{p.sign}</td><td>{p.degree}°</td><td>{p.longitude.toFixed(3)}°</td><td>{p.retrograde?"Nghịch hành biểu kiến":"Thuận hành biểu kiến"}</td></tr>)}</tbody></table></div><h3>Các góc chiếu chính (orb được hiển thị)</h3><div className="table-wrap"><table><thead><tr><th>Thiên thể</th><th>Góc chiếu</th><th>Thiên thể</th><th>Orb</th></tr></thead><tbody>{aspects.map((a,i)=><tr key={i}><td>{a.first}</td><td>{a.type} {a.angle}°</td><td>{a.second}</td><td>{a.orb}°</td></tr>)}</tbody></table></div>{lunar&&<p className="method-note">Ngày âm lịch Việt Nam theo ngày địa phương: {lunar.day}/{lunar.month}/{lunar.year} · {lunar.dayName} · năm {lunar.yearName}{lunar.leap?" · tháng nhuận":""}. Chiêm tinh và tử vi là hệ thống diễn giải văn hóa, không phải phép đo khoa học về tính cách/số phận.</p>}</>}</section>;}
-function TuviProfile(){const [date,setDate]=useState("");const [hour,setHour]=useState(0);const [gender,setGender]=useState("Nữ");const [chart,setChart]=useState<ReturnType<typeof astro.bySolar>|null>(null);const [error,setError]=useState("");const submit=()=>{try{if(!date)throw new Error("Chọn ngày sinh dương lịch.");const [y,m,d]=date.split("-").map(Number);const iso=`${y}-${m}-${d}`;setChart(astro.bySolar(iso,hour,gender,true,"vi-VN"));setError("");}catch(e){setChart(null);setError(e instanceof Error?e.message:"Không thể lập lá số.");}};const times=["Tý sớm (00:00–00:59)","Sửu (01:00–02:59)","Dần (03:00–04:59)","Mão (05:00–06:59)","Thìn (07:00–08:59)","Tỵ (09:00–10:59)","Ngọ (11:00–12:59)","Mùi (13:00–14:59)","Thân (15:00–16:59)","Dậu (17:00–18:59)","Tuất (19:00–20:59)","Hợi (21:00–22:59)","Tý muộn (23:00–23:59)"];return <section className="info"><p className="eyebrow">TỬ VI ĐẨU SỐ · LẬP LÁ SỐ THEO DƯƠNG LỊCH</p><h2>Lá số Tử vi</h2><p>Ngày giờ sinh và giới tính dùng làm tham số của thuật toán. Nếu không biết giờ sinh, không nên chọn đại một giờ vì cung và sao có thể thay đổi. Cách an sao/cục phụ thuộc trường phái.</p><div className="generator-controls"><label>Ngày sinh dương lịch <input type="date" value={date} onChange={e=>setDate(e.target.value)} /></label><label>Giờ sinh <select value={hour} onChange={e=>setHour(Number(e.target.value))}>{times.map((v,i)=><option key={i} value={i}>{v}</option>)}</select></label><label>Giới tính dùng khi an lá số <select value={gender} onChange={e=>setGender(e.target.value)}><option value="Nữ">Nữ</option><option value="Nam">Nam</option></select></label></div><button onClick={submit}>Lập lá số</button>{error&&<p className="notice">{error}</p>}{chart&&<><div className="metric-grid"><div><span>Âm lịch</span><strong>{chart.lunarDate}</strong></div><div><span>Can chi</span><strong>{chart.chineseDate}</strong></div><div><span>Mệnh cục</span><strong>{chart.fiveElementsClass}</strong></div><div><span>Mệnh / Thân</span><strong>{chart.soul} / {chart.body}</strong></div></div><div className="palace-grid">{chart.palaces.map((palace,i)=><article key={`${palace.name}-${i}`}><strong>{palace.name}</strong><small>{palace.heavenlyStem}{palace.earthlyBranch}</small><p>{palace.majorStars.map(star=>star.name).join(" · ")||"Không có chính tinh"}</p><small>{palace.minorStars.slice(0,5).map(star=>star.name).join(" · ")}</small></article>)}</div><p className="method-note">Lá số được lập bằng iztro 2.6.1 (MIT), dùng lịch âm thiên văn và quy tắc thư viện; nên đối chiếu với nguồn lập số đáng tin cậy khi cần. Phần diễn giải và “con số may mắn” chỉ mang tính văn hóa/giải trí, không có căn cứ chứng minh dự đoán vận mệnh hoặc cải thiện odds Vietlott.</p></>}</section>;}
+function TuviProfile() {
+  const [date, setDate] = useState("");
+  const [hour, setHour] = useState(0);
+  const [gender, setGender] = useState("Nữ");
+  const [chart, setChart] = useState<ReturnType<typeof astro.bySolar> | null>(null);
+  const [error, setError] = useState("");
+  const submit = () => {
+    try {
+      if (!date) throw new Error("Chọn ngày sinh dương lịch.");
+      const [y, m, d] = date.split("-").map(Number);
+      const result = astro.bySolar(`${y}-${m}-${d}`, hour, gender, true, "vi-VN");
+      if (result.palaces.length !== 12) throw new Error("Lá số trả về không đủ 12 cung.");
+      setChart(result);
+      setError("");
+    } catch (e) {
+      setChart(null);
+      setError(e instanceof Error ? e.message : "Không thể lập lá số.");
+    }
+  };
+  const times = ["Tý sớm (00:00–00:59)", "Sửu (01:00–02:59)", "Dần (03:00–04:59)", "Mão (05:00–06:59)", "Thìn (07:00–08:59)", "Tỵ (09:00–10:59)", "Ngọ (11:00–12:59)", "Mùi (13:00–14:59)", "Thân (15:00–16:59)", "Dậu (17:00–18:59)", "Tuất (19:00–20:59)", "Hợi (21:00–22:59)", "Tý muộn (23:00–23:59)"];
+  const insights = chart ? analyzeTuvi(chart) : [];
+  const overview = chart ? summarizeTuvi(chart, insights) : [];
+  const horoscope = chart?.horoscope(new Date(), new Date().getHours() < 1 ? 0 : Math.min(12, Math.floor((new Date().getHours() + 1) / 2))) ?? null;
+  const sections = ["Tổng quan", ...insights.map(item => item.title), "Vận hạn tham khảo"];
+  return <section className="info tuvi-page">
+    <p className="eyebrow">TỬ VI ĐẨU SỐ · LÁ SỐ & DIỄN GIẢI THEO DỮ LIỆU</p>
+    <h2>Lập lá số Tử vi</h2>
+    <p>Nhập đúng ngày dương lịch, giờ sinh và giới tính theo quy ước an lá số. Giờ sinh sai có thể làm thay đổi cấu trúc cung. Bản luận giải dưới đây mô tả biểu tượng theo thư viện và không khẳng định tương lai.</p>
+    <div className="generator-controls">
+      <label>Ngày sinh dương lịch <input type="date" value={date} onChange={e => setDate(e.target.value)} /></label>
+      <label>Giờ sinh <select value={hour} onChange={e => setHour(Number(e.target.value))}>{times.map((value, index) => <option key={index} value={index}>{value}</option>)}</select></label>
+      <label>Giới tính dùng khi an lá số <select value={gender} onChange={e => setGender(e.target.value)}><option value="Nữ">Nữ</option><option value="Nam">Nam</option></select></label>
+    </div>
+    <button onClick={submit}>Lập lá số & xem tổng quan</button>
+    {error && <p className="notice">{error}</p>}
+    {chart && <>
+      <div className="tuvi-summary-grid">
+        <div><span>Ngày sinh âm lịch</span><strong>{chart.lunarDate}</strong></div>
+        <div><span>Can chi</span><strong>{chart.chineseDate}</strong></div>
+        <div><span>Giờ sinh</span><strong>{chart.time} · {chart.timeRange}</strong></div>
+        <div><span>Mệnh cục</span><strong>{chart.fiveElementsClass}</strong></div>
+        <div><span>Mệnh chủ / Thân chủ</span><strong>{chart.soul} / {chart.body}</strong></div>
+        <div><span>Cung Mệnh / cung Thân</span><strong>{chart.earthlyBranchOfSoulPalace} / {chart.earthlyBranchOfBodyPalace}</strong></div>
+      </div>
+      <nav className="tuvi-toc" aria-label="Mục lục lá số">{sections.map((title, i) => <a key={title} href={`#tuvi-section-${i}`}>{String(i + 1).padStart(2, "0")} · {title}</a>)}</nav>
+      <div className="tuvi-chart" aria-label="Bố cục 12 cung Tử vi">
+        {chart.palaces.map((palace, i) => <article className={`tuvi-palace ${palace.isBodyPalace ? "is-body" : ""} ${palace.name === "Mệnh" ? "is-life" : ""}`} key={`${palace.name}-${i}`}>
+          <header><span>{palace.heavenlyStem}·{palace.earthlyBranch}</span><strong>{palace.name}{palace.isBodyPalace ? " · Thân" : ""}</strong><small>Đại hạn {palace.decadal.range[0]}–{palace.decadal.range[1]}</small></header>
+          <div className="tuvi-stars">{palace.majorStars.map((star, j) => <b className="major-star" key={`${star.name}-${j}`}>{star.name}{star.brightness ? ` (${star.brightness})` : ""}{star.mutagen ? ` · Hóa ${star.mutagen}` : ""}</b>)}{palace.minorStars.slice(0, 8).map((star, j) => <span key={`${star.name}-${j}`} className={star.mutagen ? "transformed-star" : ""}>{star.name}{star.mutagen ? ` · Hóa ${star.mutagen}` : ""}</span>)}{!palace.majorStars.length && <small>Không có chính tinh · cần xem đối cung</small>}</div>
+          <footer>{palace.changsheng12} · {palace.boshi12}</footer>
+        </article>)}
+        <aside className="tuvi-chart-center"><span>LÁ SỐ TỬ VI</span><h3>{chart.gender} · {chart.solarDate}</h3><p>{chart.lunarDate} · {chart.chineseDate}</p><p>{chart.time} ({chart.timeRange})</p><strong>{chart.fiveElementsClass}</strong><p>Mệnh chủ: {chart.soul}<br />Thân chủ: {chart.body}</p></aside>
+      </div>
+      <section id="tuvi-section-0" className="tuvi-reading"><p className="eyebrow">TỔNG HỢP CÁC CUNG & DỮ LIỆU AN SAO</p><h3>Tổng quan lá số</h3>{overview.map((item, i) => <article key={i}><h4>{item.title}</h4><p>{item.text}</p></article>)}<p className="method-note">Cách đọc: lấy sao và độ sáng từ iztro 2.6.1, quy ước an sao mặc định; nội dung diễn giải được ghi rõ là khung biểu tượng, không phải chẩn đoán hay lời tiên tri.</p></section>
+      {insights.map((item, i) => <section id={`tuvi-section-${i + 1}`} className={`tuvi-reading tone-${item.tone}`} key={item.title}><p className="eyebrow">LUẬN GIẢI THAM KHẢO · DỰA TRÊN SAO TRONG CUNG</p><h3>{item.title}</h3><p>{item.text}</p><small><strong>Căn cứ trên lá số:</strong> {item.evidence}</small></section>)}
+      {horoscope && <section id={`tuvi-section-${sections.length - 1}`} className="tuvi-reading"><p className="eyebrow">LƯU NHẬT · THAM KHẢO THEO NGÀY HIỆN TẠI</p><h3>Vận hạn biểu tượng hôm nay</h3><p>Lưu Nhật an tại cung <strong>{horoscope.daily.name}</strong> ({horoscope.daily.heavenlyStem}{horoscope.daily.earthlyBranch}). Theo cách đọc Tử Vi truyền thống, có thể dùng cung này làm chủ đề tự quan sát trong ngày; không suy ra sự kiện chắc chắn.</p><p>Sao lưu ngày trong cung: {horoscope.daily.stars?.flat().map(star => star.name).join(" · ") || "không ghi nhận"}.</p><small>Ngày máy tính hiện tại: {new Date().toLocaleDateString("vi-VN")} · kết quả thay đổi mỗi ngày. Muốn xem lại ngày cụ thể, có thể dùng mục ngày tra cứu ở trang Năng lượng hôm nay.</small></section>}
+      <section className="tuvi-reading responsibility"><h3>Giới hạn & trách nhiệm</h3><p>Lá số được lập theo một cấu hình trường phái cụ thể; các trường phái khác có thể an sao/luận khác. Nội dung không thay thế quyết định y tế, tài chính, pháp lý hay quan hệ cá nhân. Không dùng phần này để khẳng định vận mệnh hoặc chọn số với kỳ vọng tăng xác suất xổ số.</p></section>
+    </>}
+  </section>;
+}
 function Bao() { const [n, setN] = useState(7);const safeN=Math.max(6,Math.min(18,n));const odds=bundleJackpotOdds(45,6,safeN);const fraction=probabilityFraction(odds.favorable,odds.total); return <section className="info"><h2>Máy tính Bao Mega 6/45</h2><label>Số số chọn <input type="number" min="6" max="18" value={n} onChange={(e) => setN(Number(e.target.value))} /></label><p>{odds.tickets.toLocaleString("vi-VN")} vé tổ hợp · chi phí tham khảo {(Number(odds.tickets)*10000).toLocaleString("vi-VN")} VNĐ (10.000đ/vé giả định).</p><p>Xác suất Jackpot nếu mua đủ tổ hợp: {fraction} (khoảng 1 / {Number(odds.total/odds.favorable).toLocaleString("vi-VN")}). Cơ hội jackpot tăng theo số vé khác nhau đã mua; không có tổ hợp nào tự nó “nóng” hơn.</p></section>; }
 
 createRoot(document.querySelector("#app")!).render(<App />);
