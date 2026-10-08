@@ -34,6 +34,11 @@ jobs:
         run: |
           git config user.name vietlott-lab-bot
           git config user.email actions@users.noreply.github.com
+          mkdir -p web/public/data
+          for game in mega power lotto535; do
+            if [ -f "data/curated/$game.json" ]; then cp "data/curated/$game.json" "web/public/data/$game.json"; fi
+          done
           git add data
+          git add web/public/data
           git diff --cached --quiet || git commit -m 'data: update verified results'
           git push
