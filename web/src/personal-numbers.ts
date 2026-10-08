@@ -1,0 +1,2 @@
+import type {NumerologyChart} from "./numerology";
+export function personalNumbers(chart:NumerologyChart,birth:Date,max:number){const raw=[chart.lifePath,chart.birthday,chart.expression,chart.soulUrge,chart.personality,chart.personalYear,birth.getDate(),birth.getMonth()+1,birth.getFullYear()%100];const out=[...new Set(raw.map(n=>((n-1)%max)+1))];for(let n=1;out.length<6;n++)if(!out.includes(((n*7+chart.lifePath)%max)+1))out.push(((n*7+chart.lifePath)%max)+1);return out.sort((a,b)=>a-b).slice(0,6);}
