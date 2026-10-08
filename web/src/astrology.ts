@@ -2,6 +2,8 @@ import * as Astronomy from "astronomy-engine";
 
 export type Placement = { name: string; longitude: number; sign: string; degree: number; retrograde: boolean };
 export type Aspect = { first: string; second: string; type: string; angle: number; orb: number };
+export type HouseCusp = { house: number; longitude: number; sign: string; degree: number };
+export type ChartAngles = { ascendant: number; midheaven: number; localSiderealHours: number; houses: HouseCusp[] };
 const signs = ["Bạch Dương", "Kim Ngưu", "Song Tử", "Cự Giải", "Sư Tử", "Xử Nữ", "Thiên Bình", "Bọ Cạp", "Nhân Mã", "Ma Kết", "Bảo Bình", "Song Ngư"];
 const bodies: [string, Astronomy.Body][] = [
   ["Mặt Trời", Astronomy.Body.Sun], ["Mặt Trăng", Astronomy.Body.Moon], ["Sao Thủy", Astronomy.Body.Mercury],
@@ -49,4 +51,39 @@ export function localBirthToUtc(value: string, offsetMinutes: number): Date {
   const date = new Date(utc);
   if (date.getUTCFullYear() !== y || date.getUTCMonth() !== mo - 1 || date.getUTCDate() !== d || h > 23 || mi > 59) throw new Error("Ngày hoặc giờ sinh không hợp lệ.");
   return date;
+}
+
+/** Mean obliquity of the ecliptic using the standard cubic century expression (degrees). */
+export function meanObliquity(date: Date): number {
+  const jd = date.getTime() / 86400000 + 2440587.5;
+  const centuries = (jd - 2451545) / 36525;
+  const arcSeconds = 84381.448 - 46.815 * centuries - 0.00059 * centuries ** 2 + 0.001813 * centuries ** 3;
+  return arcSeconds / 3600;
+}
+
+/** Tropical Ascendant/MC plus Whole Sign house cusps. Coordinates are degrees, east-positive longitude. */
+export function calculateChartAngles(date: Date, latitude: number, longitude: number): ChartAngles {
+  if (!Number.isFinite(date.getTime()) || !Number.isFinite(latitude) || latitude < -66 || latitude > 66 ||
+      !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    throw new Error("Cần thời điểm hợp lệ và tọa độ nơi sinh (vĩ độ ±66°, kinh độ ±180°).");
+  }
+  const localSiderealHours = ((Astronomy.SiderealTime(date) + longitude / 15) % 24 + 24) % 24;
+  const theta = localSiderealHours * 15 * Math.PI / 180;
+  const phi = latitude * Math.PI / 180;
+  const epsilon = meanObliquity(date) * Math.PI / 180;
+  const ascX = Math.sin(epsilon) * Math.tan(phi) + Math.cos(epsilon) * Math.sin(theta);
+  let ascendant = norm(Math.atan2(-Math.cos(theta), ascX) * 180 / Math.PI);
+  // Select the eastern intersection of ecliptic and horizon.
+  ascendant = norm(ascendant + (ascendant < 180 ? 180 : -180));
+  const midheaven = norm(Math.atan2(Math.sin(theta), Math.cos(theta) * Math.cos(epsilon)) * 180 / Math.PI);
+  const firstHouseSign = Math.floor(ascendant / 30);
+  const houses = Array.from({ length: 12 }, (_, index) => {
+    const cuspLongitude = ((firstHouseSign + index) % 12) * 30;
+    return { house: index + 1, longitude: cuspLongitude, sign: signs[(firstHouseSign + index) % 12], degree: 0 };
+  });
+  return { ascendant, midheaven, localSiderealHours, houses };
+}
+
+export function findHouse(longitude: number, houses: HouseCusp[]): number {
+  return (Math.floor(norm(longitude) / 30 - houses[0].longitude / 30 + 12) % 12) + 1;
 }
