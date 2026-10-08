@@ -1,0 +1,2 @@
+const disclaimer = "Kết quả xổ số là ngẫu nhiên. Thống kê quá khứ không giúp dự đoán kỳ quay sau. Trang này chỉ mang tính tham khảo và giải trí, không liên kết với Vietlott. Chỉ dành cho người từ 18 tuổi trở lên. Hãy chơi có trách nhiệm.";
+document.querySelector<HTMLDivElement>("#app")!.innerHTML = `<main><h1>Vietlott Lab</h1><p>Kho lưu trữ và thống kê minh bạch.</p><footer>${disclaimer}</footer></main>`;

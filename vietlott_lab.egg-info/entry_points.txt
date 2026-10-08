@@ -1,0 +1,2 @@
+[console_scripts]
+vl = pipeline.cli:main
