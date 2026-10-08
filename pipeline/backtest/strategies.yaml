@@ -1,0 +1,22 @@
+version: 1
+registered_at: 2026-10-08
+seed: 20261008
+games: [mega, power, lotto535]
+baseline:
+  name: random
+  monte_carlo_runs: 10000
+strategies:
+  - name: frequency_weighted
+    windows: [50, 100, all]
+  - name: gap_weighted
+    window: all
+  - name: low_popularity
+    avoid_all_numbers_le_31: true
+    avoid_long_consecutive_runs: true
+    avoid_arithmetic_progressions: true
+    avoid_extreme_sums: true
+  - name: random_filtered
+    filters: [sum_range, odd_even, low_high, max_consecutive]
+metrics: [match_distribution, rate_at_least_3, net_return_per_ticket]
+multiple_comparison_correction: holm
+evaluation: walk_forward_only

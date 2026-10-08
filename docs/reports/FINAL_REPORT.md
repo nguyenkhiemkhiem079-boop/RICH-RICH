@@ -35,6 +35,7 @@ Power/Lotto verify        FAIL — ID/schema conflicts
 - 🔴 Power record 00944 thiếu số đặc biệt; Lotto có nhiều đoạn ID gap.
 - 🔴 Chưa có Holm-corrected randomness suite đầy đủ.
 - 🔴 Chưa có backtest 10.000-run baseline.
+- 🟡 Preregistration đã commit tại `pipeline/backtest/strategies.yaml`; hash cần ghi khi bắt đầu chạy.
 - 🔴 License placeholder cần chủ sở hữu chọn.
 
 ## Việc người dùng phải làm thủ công
