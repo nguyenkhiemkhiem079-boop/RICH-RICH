@@ -4,6 +4,7 @@ import { GoogleGeminiEffect } from "./gemini-effect";
 import "./style.css";
 import "./analysis.css";
 import "./dashboard.css";
+import "./dark-theme.css";
 
 const disclaimer = "Kết quả xổ số là ngẫu nhiên. Thống kê quá khứ không giúp dự đoán kỳ quay sau. Trang này chỉ mang tính tham khảo và giải trí, không liên kết với Vietlott. Chỉ dành cho người từ 18 tuổi trở lên. Hãy chơi có trách nhiệm.";
 const nav = ["Trang chủ", "Mega 6/45", "Power 6/55", "Lotto 5/35", "Bản đồ số", "Cấu trúc dữ liệu", "Lọc lịch sử", "Bộ số tham khảo", "Kiểm tra bộ số", "Thống kê", "Máy tính Bao", "Backtest", "Kiến thức", "Nguồn dữ liệu & phương pháp"];
