@@ -10,11 +10,12 @@ import { personalNumbers } from "./personal-numbers";
 import { calculatePlacements } from "./astrology";
 import { calculateAspects, localBirthToUtc } from "./astrology";
 import { vietnameseLunar } from "./lunar";
+import { calculateDailyGuidance } from "./daily-guidance";
 import { astro } from "iztro";
 import { bundleJackpotOdds, choose, jackpotOdds, matchDistribution, probabilityFraction } from "./probability";
 
 const disclaimer = "Kết quả xổ số là ngẫu nhiên. Thống kê quá khứ không giúp dự đoán kỳ quay sau. Trang này chỉ mang tính tham khảo và giải trí, không liên kết với Vietlott. Chỉ dành cho người từ 18 tuổi trở lên. Hãy chơi có trách nhiệm.";
-const nav = ["Trang chủ", "Mega 6/45", "Power 6/55", "Lotto 5/35", "Bản đồ số", "Cấu trúc dữ liệu", "Lọc lịch sử", "Bộ số tham khảo", "Khám phá bản thân", "Tử vi", "Bản đồ sao", "Kiểm tra bộ số", "Thống kê", "Máy tính Bao", "Backtest", "Kiến thức", "Nguồn dữ liệu & phương pháp"];
+const nav = ["Trang chủ", "Mega 6/45", "Power 6/55", "Lotto 5/35", "Bản đồ số", "Cấu trúc dữ liệu", "Lọc lịch sử", "Bộ số tham khảo", "Khám phá bản thân", "Năng lượng hôm nay", "Tử vi", "Bản đồ sao", "Kiểm tra bộ số", "Thống kê", "Máy tính Bao", "Backtest", "Kiến thức", "Nguồn dữ liệu & phương pháp"];
 type Draw = { draw_id: number; draw_date: string; numbers: number[]; special?: number | null };
 
 function App() {
@@ -33,6 +34,7 @@ function Page({ page }: { page: string }) {
   if (games.includes(page)) return <GamePage game={page} />;
   if (page === "Bộ số tham khảo") return <Generator />;
   if (page === "Khám phá bản thân") return <PersonalProfile />;
+  if (page === "Năng lượng hôm nay") return <DailyGuidancePage />;
   if (page === "Bản đồ sao") return <AstrologyProfile />;
   if (page === "Tử vi") return <TuviProfile />;
   if (page === "Bản đồ số") return <NumberMap />;
@@ -72,6 +74,67 @@ function NumberMap() { const draws=useMegaDraws(); const counts=Array.from({leng
 function Structure() { const draws=useMegaDraws(); const rows=draws.map(d=>{const odd=d.numbers.filter(n=>n%2).length; const low=d.numbers.filter(n=>n<=22).length; const sum=d.numbers.reduce((a,n)=>a+n,0); const consecutive=d.numbers.slice(1).filter((n,i)=>n-d.numbers[i]===1).length; return {odd,low,sum,consecutive};}); const avg=(key:keyof typeof rows[number])=>rows.length?(rows.reduce((a,r)=>a+Number(r[key]),0)/rows.length).toFixed(2):"—"; return <section className="info"><p className="eyebrow">CẤU TRÚC DÃY SỐ</p><h2>Tìm hiểu cấu trúc dữ liệu</h2><p>Trung bình trên {draws.length.toLocaleString("vi-VN")} kỳ · thống kê mô tả, không phải dự đoán.</p><div className="metric-grid"><div><span>Tổng trung bình</span><strong>{avg("sum")}</strong></div><div><span>Số lẻ trung bình</span><strong>{avg("odd")}</strong></div><div><span>Số thấp trung bình</span><strong>{avg("low")}</strong></div><div><span>Số liên tiếp TB</span><strong>{avg("consecutive")}</strong></div></div><h3>Phân bố chẵn/lẻ</h3><div className="structure-bars">{[0,1,2,3,4,5,6].map(odd=><div key={odd}><span>{odd}-{6-odd}</span><i style={{height:`${Math.max(4,rows.filter(r=>r.odd===odd).length/(Math.max(1,rows.length)*.5)*100)}%`}} /></div>)}</div></section>; }
 function History() { const draws=useMegaDraws(); const [query,setQuery]=useState(""); const [number,setNumber]=useState(""); const filtered=draws.filter(d=>(!query||String(d.draw_id).includes(query)||d.draw_date.includes(query))&&(!number||d.numbers.includes(Number(number)))); return <section className="info"><p className="eyebrow">BỘ LỌC LỊCH SỬ · TỰ CẬP NHẬT</p><h2>Tra cứu kỳ quay</h2><p>{draws.length.toLocaleString("vi-VN")} kỳ quay được lưu</p><div className="generator-controls"><label>Ngày hoặc mã kỳ <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Ví dụ: 01570 hoặc 2026-10" /></label><label>Có chứa số <input type="number" min="1" max="45" value={number} onChange={e=>setNumber(e.target.value)} placeholder="01–45" /></label></div><div className="history-list">{filtered.slice(-30).reverse().map(d=><div className="history-row" key={d.draw_id}><span><strong>{d.draw_date}</strong><small>Kỳ #{String(d.draw_id).padStart(5,"0")}</small></span><b>{d.numbers.map(n=>String(n).padStart(2,"0")).join(" · ")}</b></div>)}</div></section>; }
 function PersonalProfile(){const [name,setName]=useState("");const [date,setDate]=useState("");const [game,setGame]=useState("Mega 6/45");const [year,setYear]=useState(new Date().getFullYear());const [chart,setChart]=useState<ReturnType<typeof calculateNumerology>|null>(null);const [error,setError]=useState("");const submit=()=>{try{if(!name||!date)throw new Error("Nhập họ tên và ngày sinh.");const [y,m,d]=date.split("-").map(Number);const birth=new Date(y,m-1,d,12);setChart(calculateNumerology(name,birth,year));setError("");}catch(e){setChart(null);setError(e instanceof Error?e.message:"Không thể tính hồ sơ.");}};const [y,m,d]=date?date.split("-").map(Number):[0,0,0];const birth=date?new Date(y,m-1,d,12):new Date(Number.NaN);const numbers=chart?personalNumbers(chart,birth,game==="Mega 6/45"?45:55):[];return <section className="info"><p className="eyebrow">THẦN SỐ HỌC · CÔNG THỨC HIỂN THỊ</p><h2>Hồ sơ cá nhân & con số mang ý nghĩa cá nhân</h2><p>Nhập tên và ngày sinh. Bảng chữ cái dùng hệ Pythagoras Latin, quy đổi tên tiếng Việt bằng cách bỏ dấu và Đ → D; các trường phái có thể quy ước khác nhau.</p><div className="generator-controls"><label>Họ tên khai sinh <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nguyễn Văn A" /></label><label>Ngày sinh dương lịch <input type="date" value={date} onChange={e=>setDate(e.target.value)} /></label><label>Năm cá nhân <input type="number" min="1" max="9999" value={year} onChange={e=>setYear(Number(e.target.value))} /></label><label>Game <select value={game} onChange={e=>setGame(e.target.value)}><option>Mega 6/45</option><option>Power 6/55</option></select></label></div><button onClick={submit}>Tính hồ sơ</button>{error&&<p className="notice">{error}</p>}{chart&&<><div className="numerology-grid">{[["Đường đời",chart.lifePath],["Ngày sinh",chart.birthday],["Biểu đạt",chart.expression],["Linh hồn",chart.soulUrge],["Nhân cách",chart.personality],["Trưởng thành",chart.maturity],["Năm cá nhân",chart.personalYear]].map(([label,n])=><div key={String(label)}><span>{label}</span><strong>{n}</strong><small>{chart.steps[String(label)==="Đường đời"?"lifePath":String(label)==="Năm cá nhân"?"personalYear":"birthday"]}</small></div>)}</div><h3>Bộ số cá nhân hóa cho {game}</h3><div className="personal-number-list">{numbers.map(item=><div key={item.value}><strong>{String(item.value).padStart(2,"0")}</strong><span>{item.sources.join(" · ")}</span></div>)}</div><p className="method-note">Các số được ánh xạ vào phạm vi trò chơi, số thiếu được bổ sung ổn định theo seed hồ sơ. Đây là quy tắc cá nhân hóa để giải trí, không phải hệ thống tử vi/thần số học có giá trị khoa học đã được xác nhận, và không làm tăng xác suất trúng.</p></>}</section>;}
+function DailyGuidancePage() {
+  const today = new Date();
+  const [date, setDate] = useState(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`);
+  const [birth, setBirth] = useState("");
+  const [game, setGame] = useState("Mega 6/45");
+  const [guidance, setGuidance] = useState<ReturnType<typeof calculateDailyGuidance> | null>(null);
+  const [error, setError] = useState("");
+  const max = game === "Mega 6/45" ? 45 : 55;
+  const birthDate = birth ? new Date(`${birth}T12:00:00`) : null;
+  const chart = guidance ? {
+    lifePath: guidance.dayNumber,
+    birthday: guidance.luckyNumbers[0],
+    expression: guidance.personalDay ?? guidance.dayNumber,
+    soulUrge: guidance.luckyNumbers[1] ?? guidance.dayNumber,
+    personality: guidance.luckyNumbers[2] ?? guidance.dayNumber,
+    maturity: guidance.dayNumber,
+    personalYear: guidance.personalDay ?? guidance.dayNumber,
+    steps: {},
+  } : null;
+  const recommendations = guidance && chart
+    ? personalNumbers(chart, birthDate ?? new Date(`${date}T12:00:00`), max, 6)
+    : [];
+  const generate = () => {
+    try {
+      if (birthDate && Number.isNaN(birthDate.getTime())) throw new Error("Ngày sinh không hợp lệ.");
+      setGuidance(calculateDailyGuidance(date, birthDate ?? undefined));
+      setError("");
+    } catch (e) {
+      setGuidance(null);
+      setError(e instanceof Error ? e.message : "Không thể tính thông tin ngày.");
+    }
+  };
+  return <section className="info">
+    <p className="eyebrow">THẦN SỐ HỌC · CHIÊM TINH · THAM KHẢO HẰNG NGÀY</p>
+    <h2>Năng lượng hôm nay</h2>
+    <p>Ngày số được rút gọn từ ngày dương lịch; chiêm tinh dùng kinh độ hoàng đạo địa tâm tại 12:00 UTC. Có thể thêm ngày sinh để tính ngày cá nhân.</p>
+    <div className="generator-controls">
+      <label>Ngày xem <input type="date" value={date} onChange={e => setDate(e.target.value)} /></label>
+      <label>Ngày sinh (không bắt buộc) <input type="date" value={birth} onChange={e => setBirth(e.target.value)} /></label>
+      <label>Game <select value={game} onChange={e => setGame(e.target.value)}><option>Mega 6/45</option><option>Power 6/55</option></select></label>
+    </div>
+    <button onClick={generate}>Xem ngày & gợi ý số</button>
+    {error && <p className="notice">{error}</p>}
+    {guidance && <>
+      <div className="metric-grid">
+        <div><span>Ngày số chung</span><strong>{guidance.dayNumber}</strong></div>
+        <div><span>Ngày cá nhân</span><strong>{guidance.personalDay ?? "Nhập ngày sinh"}</strong></div>
+        <div><span>Hành tinh thứ</span><strong>{guidance.planetaryDay}</strong></div>
+        <div><span>Mặt Trăng</span><strong>{guidance.placements.find(p => p.name === "Mặt Trăng")?.sign}</strong></div>
+      </div>
+      <ul className="daily-themes">{guidance.themes.map((item, i) => <li key={i}>{item}</li>)}</ul>
+      <h3>Chữ số may mắn theo quy ước biểu tượng</h3>
+      <p className="lucky-digits">{guidance.luckyNumbers.map(n => <b key={n}>{n}</b>)}</p>
+      <h3>Bộ {game} gợi ý</h3>
+      <div className="personal-number-list">{recommendations.map(item => <div key={item.value}><strong>{String(item.value).padStart(2, "0")}</strong><span>{item.sources.join(" · ")}</span></div>)}</div>
+      <p className="method-note">{guidance.note} Gợi ý này được tạo ổn định theo ngày/hồ sơ; không phải dự báo kết quả quay và không làm tăng xác suất trúng. Ngày khác có thể cho chủ đề và chữ số khác.</p>
+      <button onClick={() => navigator.clipboard?.writeText(recommendations.map(n => String(n.value).padStart(2, "0")).join(" - "))}>Sao chép bộ số</button>
+    </>}
+  </section>;
+}
+
 function AstrologyProfile(){const [birthTime,setBirthTime]=useState("");const [offset,setOffset]=useState(420);const [result,setResult]=useState<ReturnType<typeof calculatePlacements>|null>(null);const [lunar,setLunar]=useState<ReturnType<typeof vietnameseLunar>|null>(null);const [error,setError]=useState("");const submit=()=>{try{const d=localBirthToUtc(birthTime,offset);setResult(calculatePlacements(d));setLunar(vietnameseLunar(new Date(d.getTime()+offset*60000)));setError("");}catch(e){setError(e instanceof Error?e.message:"Không thể tính bản đồ sao.");}};const aspects=result?calculateAspects(result):[];return <section className="info"><p className="eyebrow">CHIÊM TINH TÂY · TỌA ĐỘ THIÊN VĂN TÍNH CỤC BỘ</p><h2>Bản đồ sao theo thời điểm sinh</h2><p>Nhập chính xác ngày giờ địa phương và UTC offset. Kết quả là kinh độ hoàng đạo địa tâm; chưa tính cung mọc/12 nhà vì cần tọa độ nơi sinh và cấu hình hệ nhà.</p><div className="generator-controls"><label>Ngày giờ sinh tại nơi sinh <input type="datetime-local" value={birthTime} onChange={e=>setBirthTime(e.target.value)} /></label><label>UTC offset (phút) <input type="number" min="-840" max="840" value={offset} onChange={e=>setOffset(Number(e.target.value))} /></label></div><button onClick={submit}>Lập bản đồ sao</button>{error&&<p className="notice">{error}</p>}{result&&<><div className="table-wrap"><table><thead><tr><th>Thiên thể</th><th>Cung</th><th>Độ</th><th>Kinh độ hoàng đạo</th><th>Chuyển động</th></tr></thead><tbody>{result.map(p=><tr key={p.name}><td>{p.name}</td><td>{p.sign}</td><td>{p.degree}°</td><td>{p.longitude.toFixed(3)}°</td><td>{p.retrograde?"Nghịch hành biểu kiến":"Thuận hành biểu kiến"}</td></tr>)}</tbody></table></div><h3>Các góc chiếu chính (orb được hiển thị)</h3><div className="table-wrap"><table><thead><tr><th>Thiên thể</th><th>Góc chiếu</th><th>Thiên thể</th><th>Orb</th></tr></thead><tbody>{aspects.map((a,i)=><tr key={i}><td>{a.first}</td><td>{a.type} {a.angle}°</td><td>{a.second}</td><td>{a.orb}°</td></tr>)}</tbody></table></div>{lunar&&<p className="method-note">Ngày âm lịch Việt Nam theo ngày địa phương: {lunar.day}/{lunar.month}/{lunar.year} · {lunar.dayName} · năm {lunar.yearName}{lunar.leap?" · tháng nhuận":""}. Chiêm tinh và tử vi là hệ thống diễn giải văn hóa, không phải phép đo khoa học về tính cách/số phận.</p>}</>}</section>;}
 function TuviProfile(){const [date,setDate]=useState("");const [hour,setHour]=useState(0);const [gender,setGender]=useState("Nữ");const [chart,setChart]=useState<ReturnType<typeof astro.bySolar>|null>(null);const [error,setError]=useState("");const submit=()=>{try{if(!date)throw new Error("Chọn ngày sinh dương lịch.");const [y,m,d]=date.split("-").map(Number);const iso=`${y}-${m}-${d}`;setChart(astro.bySolar(iso,hour,gender,true,"vi-VN"));setError("");}catch(e){setChart(null);setError(e instanceof Error?e.message:"Không thể lập lá số.");}};const times=["Tý sớm (00:00–00:59)","Sửu (01:00–02:59)","Dần (03:00–04:59)","Mão (05:00–06:59)","Thìn (07:00–08:59)","Tỵ (09:00–10:59)","Ngọ (11:00–12:59)","Mùi (13:00–14:59)","Thân (15:00–16:59)","Dậu (17:00–18:59)","Tuất (19:00–20:59)","Hợi (21:00–22:59)","Tý muộn (23:00–23:59)"];return <section className="info"><p className="eyebrow">TỬ VI ĐẨU SỐ · LẬP LÁ SỐ THEO DƯƠNG LỊCH</p><h2>Lá số Tử vi</h2><p>Ngày giờ sinh và giới tính dùng làm tham số của thuật toán. Nếu không biết giờ sinh, không nên chọn đại một giờ vì cung và sao có thể thay đổi. Cách an sao/cục phụ thuộc trường phái.</p><div className="generator-controls"><label>Ngày sinh dương lịch <input type="date" value={date} onChange={e=>setDate(e.target.value)} /></label><label>Giờ sinh <select value={hour} onChange={e=>setHour(Number(e.target.value))}>{times.map((v,i)=><option key={i} value={i}>{v}</option>)}</select></label><label>Giới tính dùng khi an lá số <select value={gender} onChange={e=>setGender(e.target.value)}><option value="Nữ">Nữ</option><option value="Nam">Nam</option></select></label></div><button onClick={submit}>Lập lá số</button>{error&&<p className="notice">{error}</p>}{chart&&<><div className="metric-grid"><div><span>Âm lịch</span><strong>{chart.lunarDate}</strong></div><div><span>Can chi</span><strong>{chart.chineseDate}</strong></div><div><span>Mệnh cục</span><strong>{chart.fiveElementsClass}</strong></div><div><span>Mệnh / Thân</span><strong>{chart.soul} / {chart.body}</strong></div></div><div className="palace-grid">{chart.palaces.map((palace,i)=><article key={`${palace.name}-${i}`}><strong>{palace.name}</strong><small>{palace.heavenlyStem}{palace.earthlyBranch}</small><p>{palace.majorStars.map(star=>star.name).join(" · ")||"Không có chính tinh"}</p><small>{palace.minorStars.slice(0,5).map(star=>star.name).join(" · ")}</small></article>)}</div><p className="method-note">Lá số được lập bằng iztro 2.6.1 (MIT), dùng lịch âm thiên văn và quy tắc thư viện; nên đối chiếu với nguồn lập số đáng tin cậy khi cần. Phần diễn giải và “con số may mắn” chỉ mang tính văn hóa/giải trí, không có căn cứ chứng minh dự đoán vận mệnh hoặc cải thiện odds Vietlott.</p></>}</section>;}
 function Bao() { const [n, setN] = useState(7);const safeN=Math.max(6,Math.min(18,n));const odds=bundleJackpotOdds(45,6,safeN);const fraction=probabilityFraction(odds.favorable,odds.total); return <section className="info"><h2>Máy tính Bao Mega 6/45</h2><label>Số số chọn <input type="number" min="6" max="18" value={n} onChange={(e) => setN(Number(e.target.value))} /></label><p>{odds.tickets.toLocaleString("vi-VN")} vé tổ hợp · chi phí tham khảo {(Number(odds.tickets)*10000).toLocaleString("vi-VN")} VNĐ (10.000đ/vé giả định).</p><p>Xác suất Jackpot nếu mua đủ tổ hợp: {fraction} (khoảng 1 / {Number(odds.total/odds.favorable).toLocaleString("vi-VN")}). Cơ hội jackpot tăng theo số vé khác nhau đã mua; không có tổ hợp nào tự nó “nóng” hơn.</p></section>; }
