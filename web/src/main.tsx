@@ -10,7 +10,7 @@ import { personalNumbers } from "./personal-numbers";
 import { calculatePlacements } from "./astrology";
 import { calculateAspects, localBirthToUtc } from "./astrology";
 import { vietnameseLunar } from "./lunar";
-import { calculateDailyGuidance } from "./daily-guidance";
+import { calculateDailyGuidance, dateFromKey } from "./daily-guidance";
 import { astro } from "iztro";
 import { bundleJackpotOdds, choose, jackpotOdds, matchDistribution, probabilityFraction } from "./probability";
 
@@ -75,11 +75,13 @@ function Structure() { const draws=useMegaDraws(); const rows=draws.map(d=>{cons
 function History() { const draws=useMegaDraws(); const [query,setQuery]=useState(""); const [number,setNumber]=useState(""); const filtered=draws.filter(d=>(!query||String(d.draw_id).includes(query)||d.draw_date.includes(query))&&(!number||d.numbers.includes(Number(number)))); return <section className="info"><p className="eyebrow">BỘ LỌC LỊCH SỬ · TỰ CẬP NHẬT</p><h2>Tra cứu kỳ quay</h2><p>{draws.length.toLocaleString("vi-VN")} kỳ quay được lưu</p><div className="generator-controls"><label>Ngày hoặc mã kỳ <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Ví dụ: 01570 hoặc 2026-10" /></label><label>Có chứa số <input type="number" min="1" max="45" value={number} onChange={e=>setNumber(e.target.value)} placeholder="01–45" /></label></div><div className="history-list">{filtered.slice(-30).reverse().map(d=><div className="history-row" key={d.draw_id}><span><strong>{d.draw_date}</strong><small>Kỳ #{String(d.draw_id).padStart(5,"0")}</small></span><b>{d.numbers.map(n=>String(n).padStart(2,"0")).join(" · ")}</b></div>)}</div></section>; }
 function PersonalProfile(){const [name,setName]=useState("");const [date,setDate]=useState("");const [game,setGame]=useState("Mega 6/45");const [year,setYear]=useState(new Date().getFullYear());const [chart,setChart]=useState<ReturnType<typeof calculateNumerology>|null>(null);const [error,setError]=useState("");const submit=()=>{try{if(!name||!date)throw new Error("Nhập họ tên và ngày sinh.");const [y,m,d]=date.split("-").map(Number);const birth=new Date(y,m-1,d,12);setChart(calculateNumerology(name,birth,year));setError("");}catch(e){setChart(null);setError(e instanceof Error?e.message:"Không thể tính hồ sơ.");}};const [y,m,d]=date?date.split("-").map(Number):[0,0,0];const birth=date?new Date(y,m-1,d,12):new Date(Number.NaN);const numbers=chart?personalNumbers(chart,birth,game==="Mega 6/45"?45:55):[];return <section className="info"><p className="eyebrow">THẦN SỐ HỌC · CÔNG THỨC HIỂN THỊ</p><h2>Hồ sơ cá nhân & con số mang ý nghĩa cá nhân</h2><p>Nhập tên và ngày sinh. Bảng chữ cái dùng hệ Pythagoras Latin, quy đổi tên tiếng Việt bằng cách bỏ dấu và Đ → D; các trường phái có thể quy ước khác nhau.</p><div className="generator-controls"><label>Họ tên khai sinh <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nguyễn Văn A" /></label><label>Ngày sinh dương lịch <input type="date" value={date} onChange={e=>setDate(e.target.value)} /></label><label>Năm cá nhân <input type="number" min="1" max="9999" value={year} onChange={e=>setYear(Number(e.target.value))} /></label><label>Game <select value={game} onChange={e=>setGame(e.target.value)}><option>Mega 6/45</option><option>Power 6/55</option></select></label></div><button onClick={submit}>Tính hồ sơ</button>{error&&<p className="notice">{error}</p>}{chart&&<><div className="numerology-grid">{[["Đường đời",chart.lifePath],["Ngày sinh",chart.birthday],["Biểu đạt",chart.expression],["Linh hồn",chart.soulUrge],["Nhân cách",chart.personality],["Trưởng thành",chart.maturity],["Năm cá nhân",chart.personalYear]].map(([label,n])=><div key={String(label)}><span>{label}</span><strong>{n}</strong><small>{chart.steps[String(label)==="Đường đời"?"lifePath":String(label)==="Năm cá nhân"?"personalYear":"birthday"]}</small></div>)}</div><h3>Bộ số cá nhân hóa cho {game}</h3><div className="personal-number-list">{numbers.map(item=><div key={item.value}><strong>{String(item.value).padStart(2,"0")}</strong><span>{item.sources.join(" · ")}</span></div>)}</div><p className="method-note">Các số được ánh xạ vào phạm vi trò chơi, số thiếu được bổ sung ổn định theo seed hồ sơ. Đây là quy tắc cá nhân hóa để giải trí, không phải hệ thống tử vi/thần số học có giá trị khoa học đã được xác nhận, và không làm tăng xác suất trúng.</p></>}</section>;}
 function DailyGuidancePage() {
-  const today = new Date();
-  const [date, setDate] = useState(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`);
+  const todayInVietnam = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const [date, setDate] = useState(todayInVietnam);
+  const [showOtherDate, setShowOtherDate] = useState(false);
   const [birth, setBirth] = useState("");
   const [game, setGame] = useState("Mega 6/45");
   const [guidance, setGuidance] = useState<ReturnType<typeof calculateDailyGuidance> | null>(null);
+  const [latestDraw, setLatestDraw] = useState<Draw | null>(null);
   const [error, setError] = useState("");
   const max = game === "Mega 6/45" ? 45 : 55;
   const birthDate = birth ? new Date(`${birth}T12:00:00`) : null;
@@ -96,10 +98,27 @@ function DailyGuidancePage() {
   const recommendations = guidance && chart
     ? personalNumbers(chart, birthDate ?? new Date(`${date}T12:00:00`), max, 6)
     : [];
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      const files = game === "Mega 6/45" ? ["mega"] : ["power"];
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL}data/${files[0]}.json?ts=${Date.now()}`);
+        if (!response.ok) return;
+        const rows = await response.json() as Draw[];
+        if (alive) setLatestDraw(rows.at(-1) ?? null);
+      } catch { if (alive) setLatestDraw(null); }
+    };
+    void load();
+    const timer = window.setInterval(load, 300000);
+    return () => { alive = false; window.clearInterval(timer); };
+  }, [game]);
   const generate = () => {
     try {
       if (birthDate && Number.isNaN(birthDate.getTime())) throw new Error("Ngày sinh không hợp lệ.");
-      setGuidance(calculateDailyGuidance(date, birthDate ?? undefined));
+      const targetDate = showOtherDate ? date : todayInVietnam();
+      setDate(targetDate);
+      setGuidance(calculateDailyGuidance(targetDate, birthDate ?? undefined));
       setError("");
     } catch (e) {
       setGuidance(null);
@@ -109,15 +128,18 @@ function DailyGuidancePage() {
   return <section className="info">
     <p className="eyebrow">THẦN SỐ HỌC · CHIÊM TINH · THAM KHẢO HẰNG NGÀY</p>
     <h2>Năng lượng hôm nay</h2>
-    <p>Ngày số được rút gọn từ ngày dương lịch; chiêm tinh dùng kinh độ hoàng đạo địa tâm tại 12:00 UTC. Có thể thêm ngày sinh để tính ngày cá nhân.</p>
+    <p>Ngày xem tự lấy theo giờ Việt Nam, không cần chọn. Web tải kết quả quay mới nhất của game đang chọn và làm mới định kỳ; phần số biểu tượng được tính riêng theo ngày, không suy ra từ kết quả xổ số. Chiêm tinh dùng kinh độ địa tâm lúc 12:00 UTC.</p>
     <div className="generator-controls">
-      <label>Ngày xem <input type="date" value={date} onChange={e => setDate(e.target.value)} /></label>
+      <span className="today-badge">HÔM NAY · {date}</span>
+      <span className="today-badge">{latestDraw ? `KỲ MỚI NHẤT ${game} · #${String(latestDraw.draw_id).padStart(5, "0")} · ${latestDraw.draw_date}` : `ĐANG TẢI KẾT QUẢ ${game}…`}</span>
+      {showOtherDate && <label>Ngày tra cứu <input type="date" value={date} onChange={e => setDate(e.target.value)} /></label>}
       <label>Ngày sinh (không bắt buộc) <input type="date" value={birth} onChange={e => setBirth(e.target.value)} /></label>
       <label>Game <select value={game} onChange={e => setGame(e.target.value)}><option>Mega 6/45</option><option>Power 6/55</option></select></label>
     </div>
-    <button onClick={generate}>Xem ngày & gợi ý số</button>
+    <div className="daily-actions"><button onClick={generate}>Cập nhật hôm nay & gợi ý số</button><button className="secondary-button" onClick={() => setShowOtherDate(value => !value)}>{showOtherDate ? "Ẩn tra cứu ngày khác" : "Tra cứu ngày khác"}</button></div>
     {error && <p className="notice">{error}</p>}
     {guidance && <>
+    <p className="method-note">Ngày áp dụng: {dateFromKey(guidance.dateKey).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "full" })} (Asia/Ho_Chi_Minh).</p>
       <div className="metric-grid">
         <div><span>Ngày số chung</span><strong>{guidance.dayNumber}</strong></div>
         <div><span>Ngày cá nhân</span><strong>{guidance.personalDay ?? "Nhập ngày sinh"}</strong></div>

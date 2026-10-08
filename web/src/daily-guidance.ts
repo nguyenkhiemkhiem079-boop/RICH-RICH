@@ -15,7 +15,7 @@ export type DailyGuidance = {
 
 const dayRulers = ["Mặt Trăng", "Sao Hỏa", "Sao Thủy", "Mặt Trời", "Sao Mộc", "Sao Kim", "Sao Thổ"];
 
-function dateFromKey(dateKey: string): Date {
+export function dateFromKey(dateKey: string): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
   if (!match) throw new Error("Chọn ngày hợp lệ.");
   const [, year, month, day] = match.map(Number);
@@ -29,9 +29,11 @@ export function calculateDailyGuidance(dateKey: string, birth?: Date): DailyGuid
   const utcNoon = dateFromKey(dateKey);
   const dateDigits = `${dateKey.slice(0, 4)}${dateKey.slice(5, 7)}${dateKey.slice(8, 10)}`;
   const dayNumber = reduceNumerology([...dateDigits].reduce((sum, digit) => sum + Number(digit), 0));
-  const personalDay = birth && Number.isFinite(birth.getTime())
-    ? reduceNumerology(reduceNumerology(birth.getMonth() + 1 + birth.getDate() + new Date(`${dateKey}T12:00:00Z`).getUTCFullYear()) + dayNumber)
+  const targetYear = utcNoon.getUTCFullYear();
+  const personalYear = birth && Number.isFinite(birth.getTime())
+    ? reduceNumerology(birth.getMonth() + 1 + birth.getDate() + targetYear)
     : null;
+  const personalDay = personalYear === null ? null : reduceNumerology(personalYear + utcNoon.getUTCDate());
   const placements = calculatePlacements(utcNoon);
   const aspects = calculateAspects(placements);
   const sunSign = placements.find(item => item.name === "Mặt Trời")!.sign;

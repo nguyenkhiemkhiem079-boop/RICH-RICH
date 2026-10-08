@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateDailyGuidance } from "./daily-guidance";
+import { calculateDailyGuidance, dateFromKey } from "./daily-guidance";
 
 describe("daily guidance", () => {
   it("is deterministic for a chosen date and returns legal personal lucky digits", () => {
@@ -14,5 +14,8 @@ describe("daily guidance", () => {
   it("rejects malformed and impossible calendar days", () => {
     expect(() => calculateDailyGuidance("today")).toThrow();
     expect(() => calculateDailyGuidance("2026-02-30")).toThrow();
+  });
+  it("constructs day-specific ephemeris time at UTC noon", () => {
+    expect(dateFromKey("2026-10-08").toISOString()).toBe("2026-10-08T12:00:00.000Z");
   });
 });
