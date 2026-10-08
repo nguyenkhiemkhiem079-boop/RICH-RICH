@@ -16,22 +16,28 @@ import { bundleJackpotOdds, choose, jackpotOdds, matchDistribution, probabilityF
 import { shuffleTarot, tarotDeck, type TarotCard } from "./tarot";
 
 const disclaimer = "Kết quả xổ số là ngẫu nhiên. Thống kê quá khứ không giúp dự đoán kỳ quay sau. Trang này chỉ mang tính tham khảo và giải trí, không liên kết với Vietlott. Chỉ dành cho người từ 18 tuổi trở lên. Hãy chơi có trách nhiệm.";
-const nav = ["Trang chủ", "Mega 6/45", "Power 6/55", "Lotto 5/35", "Bản đồ số", "Cấu trúc dữ liệu", "Lọc lịch sử", "Bộ số tham khảo", "Khám phá bản thân", "Năng lượng hôm nay", "Tử vi", "Bản đồ sao", "Tarot", "Kiểm tra bộ số", "Thống kê", "Máy tính Bao", "Backtest", "Kiến thức", "Nguồn dữ liệu & phương pháp"];
+const navigationGroups = [
+  { title: "Kết quả", links: ["Mega 6/45", "Power 6/55", "Lotto 5/35"] },
+  { title: "Phân tích dữ liệu", links: ["Thống kê", "Cấu trúc dữ liệu", "Bản đồ số", "Lọc lịch sử", "Backtest"] },
+  { title: "Công cụ số", links: ["Bộ số tham khảo", "Kiểm tra bộ số", "Máy tính Bao"] },
+  { title: "Khám phá", links: ["Tarot", "Tử vi", "Bản đồ sao", "Khám phá bản thân", "Năng lượng hôm nay"] },
+  { title: "Trợ giúp", links: ["Kiến thức", "Nguồn dữ liệu & phương pháp"] },
+];
 type Draw = { draw_id: number; draw_date: string; numbers: number[]; special?: number | null };
 
 function App() {
   const [page, setPage] = useState(decodeURIComponent(location.hash.slice(1) || "Trang chủ"));
   const eligible = localStorage.getItem("vl-18-plus") === "yes";
-  useEffect(() => { const update = () => setPage(decodeURIComponent(location.hash.slice(1) || "Trang chủ")); addEventListener("hashchange", update); return () => removeEventListener("hashchange", update); }, []);
+  useEffect(() => { const update = () => { setPage(decodeURIComponent(location.hash.slice(1) || "Trang chủ")); document.querySelectorAll("header nav details[open]").forEach(menu => menu.removeAttribute("open")); }; addEventListener("hashchange", update); return () => removeEventListener("hashchange", update); }, []);
   return <>{!eligible && <section className="gate"><h1>Xác nhận độ tuổi</h1><p>Nội dung chỉ dành cho người từ 18 tuổi trở lên.</p><button onClick={() => { localStorage.setItem("vl-18-plus", "yes"); location.reload(); }}>Tôi từ 18 tuổi trở lên</button></section>}
-    <header><div className="topline"><span className="eyebrow">VIETLOTT LAB · DỮ LIỆU CÓ THỂ KIỂM TRA</span><span className="live-pill">● LIVE DATA</span></div><h1>Nhìn rõ lịch sử.<br /><em>Hiểu đúng xác suất.</em></h1><p>Kho lưu trữ kết quả và thống kê trung tính cho các bộ số Vietlott.</p><nav>{nav.map((item) => <a href={`#${item}`} key={item}>{item}</a>)}</nav></header>
-    {page === "Trang chủ" && <section className="hero-effect"><GoogleGeminiEffect /><div className="hero-copy"><span>THỐNG KÊ · PHƯƠNG PHÁP · MINH BẠCH</span><h2>Không dự đoán.<br />Chỉ cung cấp bằng chứng.</h2></div></section>}
+    <header><div className="topline"><a className="brand-mark" href="#Trang chủ"><span>V</span><span>VIETLOTT LAB<small>DATA · INSIGHT · REFLECTION</small></span></a><span className="live-pill">● LIVE DATA</span></div><div className="header-copy"><p className="eyebrow">DỮ LIỆU · XÁC SUẤT · KHÁM PHÁ</p><h1>Nhìn rõ lịch sử.<br /><em>Hiểu đúng xác suất.</em></h1><p>Tra cứu kết quả, đọc dữ liệu và khám phá các công cụ biểu tượng trong cùng một không gian.</p></div><nav aria-label="Điều hướng chính"><a className={page==="Trang chủ"?"is-current":""} href="#Trang chủ" aria-current={page==="Trang chủ"?"page":undefined}>Tổng quan</a>{navigationGroups.map(group=><details className="nav-group" key={group.title}><summary>{group.title}<span>⌄</span></summary><div className="nav-popover">{group.links.map(item=><a className={page===item?"is-current":""} href={`#${item}`} key={item} aria-current={page===item?"page":undefined}>{item}</a>)}</div></details>)}</nav></header>
+    {page === "Trang chủ" && <section className="hero-effect hero-compact"><GoogleGeminiEffect /><div className="hero-copy"><span>THỐNG KÊ · PHƯƠNG PHÁP · MINH BẠCH</span><h2>Không dự đoán.<br />Chỉ cung cấp bằng chứng.</h2></div></section>}
     <main><Page page={page} /></main><footer>{disclaimer}</footer></>;
 }
 
 function Page({ page }: { page: string }) {
   const games = ["Mega 6/45", "Power 6/55", "Lotto 5/35"];
-  if (page === "Trang chủ") return <><section className="game-grid">{games.map((game, i) => <article className="game-card" key={game}><span>0{i + 1}</span><h2>{game}</h2><p>Kết quả kỳ quay · tần suất · xác suất</p><a href={`#${game}`}>Xem dữ liệu →</a></article>)}</section><section className="info"><h2>Nguyên tắc của Lab</h2><p>Các kỳ quay là độc lập. Thống kê quá khứ không làm thay đổi xác suất của bộ số tiếp theo.</p></section></>;
+  if (page === "Trang chủ") return <HomeDashboard games={games}/>;
   if (games.includes(page)) return <GamePage game={page} />;
   if (page === "Bộ số tham khảo") return <Generator />;
   if (page === "Khám phá bản thân") return <ExpandedNumerologyProfile />;
@@ -48,6 +54,16 @@ function Page({ page }: { page: string }) {
   if (page === "Kiến thức") return <section className="info"><h2>Kiến thức</h2><p>Các kỳ quay độc lập. Sai lầm con bạc không làm thay đổi xác suất kỳ sau.</p></section>;
   if (page === "Backtest") return <section className="info"><h2>Backtest</h2><p>Kết quả walk-forward sẽ hiển thị cùng seed, khoảng tin cậy và hiệu chỉnh Holm khi dữ liệu hợp lệ.</p></section>;
   return <section className="info"><h2>{page}</h2><p>Nguồn ưu tiên là trang chính thức; dữ liệu được cache và kiểm tra schema trước khi công bố.</p></section>;
+}
+
+function HomeDashboard({games}:{games:string[]}) {
+  const groups=[
+    {icon:"◉",title:"Kết quả Vietlott",description:"Xem kỳ quay mới nhất và lịch sử theo từng trò chơi.",links:games,action:"Mở kết quả"},
+    {icon:"⌁",title:"Phân tích dữ liệu",description:"Tần suất, cấu trúc dãy số, lịch sử và kiểm định mô tả.",links:["Thống kê","Cấu trúc dữ liệu","Lọc lịch sử","Backtest","Bản đồ số"],action:"Khám phá dữ liệu"},
+    {icon:"✧",title:"Tarot & khám phá",description:"Một không gian suy ngẫm với Tarot, Tử Vi, bản đồ sao và thần số học.",links:["Tarot","Tử vi","Bản đồ sao","Khám phá bản thân","Năng lượng hôm nay"],action:"Mở không gian khám phá"},
+    {icon:"⟡",title:"Công cụ bộ số",description:"Tạo bộ tham khảo, kiểm tra vé và xem xác suất tổ hợp.",links:["Bộ số tham khảo","Kiểm tra bộ số","Máy tính Bao"],action:"Mở công cụ"},
+  ];
+  return <><section className="home-intro"><p className="eyebrow">CHỌN ĐIỀU BẠN MUỐN LÀM</p><h2>Một nơi. Bốn lối đi.</h2><p>Thay vì dàn trải từng tính năng, bắt đầu theo mục tiêu của bạn.</p></section><section className="home-dashboard">{groups.map((group,index)=><article className={`home-feature home-feature-${index+1}`} key={group.title}><span className="home-feature-icon">{group.icon}</span><small>0{index+1} / KHÔNG GIAN</small><h3>{group.title}</h3><p>{group.description}</p><div className="home-feature-links">{group.links.map(item=><a href={`#${item}`} key={item}>{item}<span>↗</span></a>)}</div><a className="home-feature-action" href={`#${group.links[0]}`}>{group.action} <span>→</span></a></article>)}</section><section className="info home-principle"><p className="eyebrow">NGUYÊN TẮC CỦA LAB</p><h3>Kết quả ngẫu nhiên. Dữ liệu minh bạch.</h3><p>Các kỳ quay độc lập; thống kê lịch sử không làm thay đổi xác suất kỳ tiếp theo. Công cụ cá nhân hóa và Tarot chỉ để tham khảo, không hứa hẹn dự đoán.</p></section></>;
 }
 
 function GamePage({ game }: { game: string }) {
@@ -244,15 +260,15 @@ function TarotPage() {
   </section>;
 }
 
-const birthplaces = [{name:"Hà Nội",latitude:21.0285,longitude:105.8542},{name:"TP. Hồ Chí Minh",latitude:10.8231,longitude:106.6297},{name:"Đà Nẵng",latitude:16.0544,longitude:108.2022},{name:"Huế",latitude:16.4637,longitude:107.5909},{name:"Cần Thơ",latitude:10.0452,longitude:105.7469}];
+const birthplaces = [{name:"Hà Nội",latitude:21.0285,longitude:105.8542,utcOffset:420},{name:"TP. Hồ Chí Minh",latitude:10.8231,longitude:106.6297,utcOffset:420},{name:"Đà Nẵng",latitude:16.0544,longitude:108.2022,utcOffset:420},{name:"Huế",latitude:16.4637,longitude:107.5909,utcOffset:420},{name:"Cần Thơ",latitude:10.0452,longitude:105.7469,utcOffset:420}];
 const zodiacGlyphs = ["♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓"];
 const planetGlyphs: Record<string,string> = {"Mặt Trời":"☉","Mặt Trăng":"☽","Sao Thủy":"☿","Sao Kim":"♀","Sao Hỏa":"♂","Sao Mộc":"♃","Sao Thổ":"♄","Sao Thiên Vương":"♅","Sao Hải Vương":"♆","Sao Diêm Vương":"♇"};
 function chartPoint(longitude:number,radius:number){const angle=(longitude-90)*Math.PI/180;return {x:180+Math.cos(angle)*radius,y:180+Math.sin(angle)*radius};}
 function NatalChartProfile(){
   const [birthTime,setBirthTime]=useState("");const [offset,setOffset]=useState(420);const [place,setPlace]=useState("");const [latitude,setLatitude]=useState("");const [longitude,setLongitude]=useState("");
   const [result,setResult]=useState<{placements:Placement[];angles:ChartAngles;aspects:Aspect[];lunar:ReturnType<typeof vietnameseLunar>}|null>(null);const [error,setError]=useState("");
-  const submit=()=>{try{if(latitude.trim()===""||longitude.trim()==="")throw new Error("Chọn nơi sinh hoặc nhập cả vĩ độ và kinh độ.");const lat=Number(latitude),lon=Number(longitude);const date=localBirthToUtc(birthTime,offset);const placements=calculatePlacements(date);const angles=calculateChartAngles(date,lat,lon);const localDate=new Date(date.getTime()+offset*60000);setResult({placements,angles,aspects:calculateAspects(placements),lunar:vietnameseLunar(localDate)});setError("");}catch(e){setResult(null);setError(e instanceof Error?e.message:"Không thể lập bản đồ sao.");}};
-  const choosePlace=(value:string)=>{setPlace(value);const selected=birthplaces.find(item=>item.name===value);if(selected){setLatitude(String(selected.latitude));setLongitude(String(selected.longitude));}else if(value==="custom"){setLatitude("");setLongitude("");}};
+  const submit=()=>{try{if(!birthTime)throw new Error("Hãy nhập cả ngày và giờ sinh. Nếu chưa biết giờ sinh, cung Mọc và các nhà sẽ không thể tính đáng tin cậy.");if(latitude.trim()===""||longitude.trim()==="")throw new Error("Chọn nơi sinh hoặc nhập cả vĩ độ và kinh độ.");const lat=Number(latitude),lon=Number(longitude);const date=localBirthToUtc(birthTime,offset);const placements=calculatePlacements(date);const angles=calculateChartAngles(date,lat,lon);const localDate=new Date(date.getTime()+offset*60000);setResult({placements,angles,aspects:calculateAspects(placements),lunar:vietnameseLunar(localDate)});setError("");}catch(e){setResult(null);setError(e instanceof Error?e.message:"Không thể lập bản đồ sao.");}};
+  const choosePlace=(value:string)=>{setPlace(value);const selected=birthplaces.find(item=>item.name===value);if(selected){setLatitude(String(selected.latitude));setLongitude(String(selected.longitude));setOffset(selected.utcOffset);}else if(value==="custom"){setLatitude("");setLongitude("");}};
   const ascSign=result?zodiacGlyphs[Math.floor(result.angles.ascendant/30)]+" "+["Bạch Dương","Kim Ngưu","Song Tử","Cự Giải","Sư Tử","Xử Nữ","Thiên Bình","Bọ Cạp","Nhân Mã","Ma Kết","Bảo Bình","Song Ngư"][Math.floor(result.angles.ascendant/30)]:"";
   return <section className="info natal-chart"><p className="eyebrow">CHIÊM TINH TÂY · LÁ SỐ CÁ NHÂN</p><h2>Lập bản đồ sao khai sinh</h2><p>Nhập ngày giờ địa phương và tọa độ nơi sinh để tính vị trí thiên thể, cung Mọc, Thiên Đỉnh, 12 nhà và các góc chiếu chính.</p>
     <div className="natal-form"><label>Ngày giờ sinh<input type="datetime-local" value={birthTime} onChange={e=>setBirthTime(e.target.value)}/></label><label>Múi giờ UTC (phút)<input type="number" min="-840" max="840" value={offset} onChange={e=>setOffset(Number(e.target.value))}/><small>Việt Nam hiện dùng UTC+7 = 420 phút. Với ngày lịch sử, hãy nhập đúng múi giờ tại thời điểm sinh.</small></label><label>Nơi sinh<select value={place} onChange={e=>choosePlace(e.target.value)}><option value="">Chọn thành phố hoặc nhập tọa độ</option>{birthplaces.map(item=><option key={item.name}>{item.name}</option>)}<option value="custom">Tự nhập tọa độ</option></select></label><label>Vĩ độ (Bắc + / Nam −)<input type="number" step="0.0001" value={latitude} onChange={e=>{setLatitude(e.target.value);setPlace("custom")}} placeholder="Ví dụ 21.0285"/></label><label>Kinh độ (Đông + / Tây −)<input type="number" step="0.0001" value={longitude} onChange={e=>{setLongitude(e.target.value);setPlace("custom")}} placeholder="Ví dụ 105.8542"/></label><button onClick={submit}>Lập lá số</button></div>
