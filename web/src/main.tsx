@@ -34,7 +34,7 @@ function Page({ page }: { page: string }) {
   if (page === "Trang chủ") return <><section className="game-grid">{games.map((game, i) => <article className="game-card" key={game}><span>0{i + 1}</span><h2>{game}</h2><p>Kết quả kỳ quay · tần suất · xác suất</p><a href={`#${game}`}>Xem dữ liệu →</a></article>)}</section><section className="info"><h2>Nguyên tắc của Lab</h2><p>Các kỳ quay là độc lập. Thống kê quá khứ không làm thay đổi xác suất của bộ số tiếp theo.</p></section></>;
   if (games.includes(page)) return <GamePage game={page} />;
   if (page === "Bộ số tham khảo") return <Generator />;
-  if (page === "Khám phá bản thân") return <PersonalProfile />;
+  if (page === "Khám phá bản thân") return <ExpandedNumerologyProfile />;
   if (page === "Năng lượng hôm nay") return <DailyGuidancePage />;
   if (page === "Bản đồ sao") return <AstrologyProfile />;
   if (page === "Tử vi") return <TuviProfile />;
@@ -75,6 +75,72 @@ function NumberMap() { const draws=useMegaDraws(); const counts=Array.from({leng
 function Structure() { const draws=useMegaDraws(); const rows=draws.map(d=>{const odd=d.numbers.filter(n=>n%2).length; const low=d.numbers.filter(n=>n<=22).length; const sum=d.numbers.reduce((a,n)=>a+n,0); const consecutive=d.numbers.slice(1).filter((n,i)=>n-d.numbers[i]===1).length; return {odd,low,sum,consecutive};}); const avg=(key:keyof typeof rows[number])=>rows.length?(rows.reduce((a,r)=>a+Number(r[key]),0)/rows.length).toFixed(2):"—"; return <section className="info"><p className="eyebrow">CẤU TRÚC DÃY SỐ</p><h2>Tìm hiểu cấu trúc dữ liệu</h2><p>Trung bình trên {draws.length.toLocaleString("vi-VN")} kỳ · thống kê mô tả, không phải dự đoán.</p><div className="metric-grid"><div><span>Tổng trung bình</span><strong>{avg("sum")}</strong></div><div><span>Số lẻ trung bình</span><strong>{avg("odd")}</strong></div><div><span>Số thấp trung bình</span><strong>{avg("low")}</strong></div><div><span>Số liên tiếp TB</span><strong>{avg("consecutive")}</strong></div></div><h3>Phân bố chẵn/lẻ</h3><div className="structure-bars">{[0,1,2,3,4,5,6].map(odd=><div key={odd}><span>{odd}-{6-odd}</span><i style={{height:`${Math.max(4,rows.filter(r=>r.odd===odd).length/(Math.max(1,rows.length)*.5)*100)}%`}} /></div>)}</div></section>; }
 function History() { const draws=useMegaDraws(); const [query,setQuery]=useState(""); const [number,setNumber]=useState(""); const filtered=draws.filter(d=>(!query||String(d.draw_id).includes(query)||d.draw_date.includes(query))&&(!number||d.numbers.includes(Number(number)))); return <section className="info"><p className="eyebrow">BỘ LỌC LỊCH SỬ · TỰ CẬP NHẬT</p><h2>Tra cứu kỳ quay</h2><p>{draws.length.toLocaleString("vi-VN")} kỳ quay được lưu</p><div className="generator-controls"><label>Ngày hoặc mã kỳ <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Ví dụ: 01570 hoặc 2026-10" /></label><label>Có chứa số <input type="number" min="1" max="45" value={number} onChange={e=>setNumber(e.target.value)} placeholder="01–45" /></label></div><div className="history-list">{filtered.slice(-30).reverse().map(d=><div className="history-row" key={d.draw_id}><span><strong>{d.draw_date}</strong><small>Kỳ #{String(d.draw_id).padStart(5,"0")}</small></span><b>{d.numbers.map(n=>String(n).padStart(2,"0")).join(" · ")}</b></div>)}</div></section>; }
 function PersonalProfile(){const [name,setName]=useState("");const [date,setDate]=useState("");const [game,setGame]=useState("Mega 6/45");const [year,setYear]=useState(new Date().getFullYear());const [chart,setChart]=useState<ReturnType<typeof calculateNumerology>|null>(null);const [error,setError]=useState("");const submit=()=>{try{if(!name||!date)throw new Error("Nhập họ tên và ngày sinh.");const [y,m,d]=date.split("-").map(Number);const birth=new Date(y,m-1,d,12);setChart(calculateNumerology(name,birth,year));setError("");}catch(e){setChart(null);setError(e instanceof Error?e.message:"Không thể tính hồ sơ.");}};const [y,m,d]=date?date.split("-").map(Number):[0,0,0];const birth=date?new Date(y,m-1,d,12):new Date(Number.NaN);const numbers=chart?personalNumbers(chart,birth,game==="Mega 6/45"?45:55):[];return <section className="info"><p className="eyebrow">THẦN SỐ HỌC · CÔNG THỨC HIỂN THỊ</p><h2>Hồ sơ cá nhân & con số mang ý nghĩa cá nhân</h2><p>Nhập tên và ngày sinh. Bảng chữ cái dùng hệ Pythagoras Latin, quy đổi tên tiếng Việt bằng cách bỏ dấu và Đ → D; các trường phái có thể quy ước khác nhau.</p><div className="generator-controls"><label>Họ tên khai sinh <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nguyễn Văn A" /></label><label>Ngày sinh dương lịch <input type="date" value={date} onChange={e=>setDate(e.target.value)} /></label><label>Năm cá nhân <input type="number" min="1" max="9999" value={year} onChange={e=>setYear(Number(e.target.value))} /></label><label>Game <select value={game} onChange={e=>setGame(e.target.value)}><option>Mega 6/45</option><option>Power 6/55</option></select></label></div><button onClick={submit}>Tính hồ sơ</button>{error&&<p className="notice">{error}</p>}{chart&&<><div className="numerology-grid">{[["Đường đời",chart.lifePath],["Ngày sinh",chart.birthday],["Biểu đạt",chart.expression],["Linh hồn",chart.soulUrge],["Nhân cách",chart.personality],["Trưởng thành",chart.maturity],["Năm cá nhân",chart.personalYear]].map(([label,n])=><div key={String(label)}><span>{label}</span><strong>{n}</strong><small>{chart.steps[String(label)==="Đường đời"?"lifePath":String(label)==="Năm cá nhân"?"personalYear":"birthday"]}</small></div>)}</div><h3>Bộ số cá nhân hóa cho {game}</h3><div className="personal-number-list">{numbers.map(item=><div key={item.value}><strong>{String(item.value).padStart(2,"0")}</strong><span>{item.sources.join(" · ")}</span></div>)}</div><p className="method-note">Các số được ánh xạ vào phạm vi trò chơi, số thiếu được bổ sung ổn định theo seed hồ sơ. Đây là quy tắc cá nhân hóa để giải trí, không phải hệ thống tử vi/thần số học có giá trị khoa học đã được xác nhận, và không làm tăng xác suất trúng.</p></>}</section>;}
+function ExpandedNumerologyProfile() {
+  const [name, setName] = useState("");
+  const [date, setDate] = useState("");
+  const [targetYear, setTargetYear] = useState(new Date().getFullYear());
+  const [game, setGame] = useState("Mega 6/45");
+  const [chart, setChart] = useState<ReturnType<typeof calculateNumerology> | null>(null);
+  const [error, setError] = useState("");
+  const submit = () => {
+    try {
+      if (!name.trim() || !date) throw new Error("Nhập họ tên và ngày sinh dương lịch.");
+      const [y, m, d] = date.split("-").map(Number);
+      const birth = new Date(y, m - 1, d, 12);
+      if (birth.getFullYear() !== y || birth.getMonth() !== m - 1 || birth.getDate() !== d) throw new Error("Ngày sinh không hợp lệ.");
+      setChart(calculateNumerology(name, birth, targetYear));
+      setError("");
+    } catch (e) {
+      setChart(null);
+      setError(e instanceof Error ? e.message : "Không thể tính hồ sơ.");
+    }
+  };
+  const [y, m, d] = date ? date.split("-").map(Number) : [0, 0, 0];
+  const birth = date ? new Date(y, m - 1, d, 12) : new Date(Number.NaN);
+  const numbers = chart ? personalNumbers(chart, birth, game === "Mega 6/45" ? 45 : 55) : [];
+  const metrics = chart ? [
+    ["Đường đời", chart.lifePath, chart.steps.lifePath], ["Ngày sinh", chart.birthday, chart.steps.birthday],
+    ["Sứ mệnh / Biểu đạt", chart.expression, chart.steps.expression], ["Linh hồn", chart.soulUrge, chart.steps.soulUrge],
+    ["Nhân cách", chart.personality, chart.steps.personality], ["Trưởng thành", chart.maturity, chart.steps.maturity],
+    ["Thái độ", chart.attitude, chart.steps.attitude], ["Năm cá nhân", chart.personalYear, chart.steps.personalYear],
+    ["Cân bằng", chart.balance, chart.steps.balance],
+  ] as const : [];
+  return <section className="info numerology-report">
+    <p className="eyebrow">THẦN SỐ HỌC · CÔNG THỨC MINH BẠCH · TÍNH TRÊN TRÌNH DUYỆT</p>
+    <h2>Báo cáo thần số học cá nhân</h2>
+    <p>Nhập tên khai sinh và ngày sinh. Bảng chữ cái dùng quy ước Pythagoras Latin (A=1… I=9 lặp), bỏ dấu tiếng Việt và chuyển Đ→D. Các trường phái có thể quy ước khác nhau; kết quả chỉ phục vụ tự khám phá, không phải đánh giá khoa học về tính cách hay tương lai.</p>
+    <div className="generator-controls">
+      <label>Họ tên khai sinh <input value={name} onChange={e => setName(e.target.value)} placeholder="Nguyễn Văn A" /></label>
+      <label>Ngày sinh dương lịch <input type="date" value={date} onChange={e => setDate(e.target.value)} /></label>
+      <label>Năm cần xem <input type="number" min="1" max="9999" value={targetYear} onChange={e => setTargetYear(Number(e.target.value))} /></label>
+      <label>Game gợi ý <select value={game} onChange={e => setGame(e.target.value)}><option>Mega 6/45</option><option>Power 6/55</option></select></label>
+    </div>
+    <button onClick={submit}>Tính báo cáo</button>
+    {error && <p className="notice">{error}</p>}
+    {chart && <>
+      <h3>Nhóm chỉ số chính</h3>
+      <div className="numerology-grid">{metrics.map(([label, value, formula]) => <article key={label}><span>{label}</span><strong>{value}</strong><small>{formula}</small></article>)}</div>
+      <div className="numerology-panels">
+        <article><h3>Bài học theo tên</h3><p>{chart.karmicLessons.length ? `Các số chưa xuất hiện trong bảng chữ cái của tên: ${chart.karmicLessons.join(", ")}.` : "Tên có đại diện cho đủ các số 1–9 theo quy ước chữ cái đang dùng."}</p><small>Phép tính: lập tập số từ từng chữ cái tên đã chuẩn hóa; tìm số 1–9 còn thiếu. Đây là cách đọc Pitago phổ biến, không phải chẩn đoán thiếu sót cá nhân.</small></article>
+        <article><h3>Số nợ bài học (quy ước)</h3><p>{chart.karmicDebt.length ? chart.karmicDebt.join(" · ") : "Không phát hiện số 13, 14, 16 hoặc 19 ở các tổng trung gian đã kiểm tra."}</p><small>Chỉ rà các tổng trước khi rút gọn ở Đường đời, tên và Thái độ/Năm cá nhân. Phạm vi kiểm tra giới hạn; trường phái khác có thể tính khác.</small></article>
+        <article><h3>Cầu nối chỉ số</h3><p>Đường đời ↔ Ngày sinh: <strong>{chart.lifePathBridge}</strong> · Biểu đạt ↔ Đường đời: <strong>{chart.expressionBridge}</strong></p><small>Công thức lấy hiệu tuyệt đối giữa hai chỉ số đã rút về một chữ số.</small></article>
+      </div>
+      <h3>Mũi tên ngày sinh (lưới 1–9)</h3>
+      <p className="method-note">Mỗi trục gồm ba số. Trục hiện diện khi cả ba số xuất hiện trong các chữ số ngày sinh (bỏ số 0); “thiếu” chỉ mô tả lưới, không hàm ý khuyết điểm con người.</p>
+      <div className="arrow-grid">{chart.arrows.map(arrow => <article className={arrow.present ? "arrow-present" : "arrow-empty"} key={arrow.name}><strong>{arrow.name}</strong><span>{arrow.digits.join(" · ")}</span><small>{arrow.meaning}</small></article>)}</div>
+      <h3>Đỉnh cao & thử thách theo chu kỳ</h3>
+      <p className="method-note">Dùng công thức Pitago phổ biến: các đỉnh lần lượt là tháng+ngày, ngày+năm, tổng hai đỉnh đầu, tháng+năm; thử thách dùng hiệu tuyệt đối. Mốc tuổi đầu lấy 36 trừ Đường đời đã rút về một chữ số.</p>
+      <div className="pinnacle-grid">{chart.pinnacles.map(item => <article key={item.index}><span>Đỉnh {item.index}</span><strong>{item.number}</strong><small>Thử thách {item.challenge}</small><small>Tuổi {item.startAge}–{item.endAge === 99 ? "về sau" : item.endAge}</small><small>{item.formula}</small></article>)}</div>
+      <h3>Chu kỳ 9 năm · {targetYear}</h3>
+      <div className="year-cycle">{chart.yearCycle.map(item => <article className={item.year === targetYear ? "current-year" : ""} key={item.year}><span>{item.year}</span><strong>{item.number}</strong></article>)}</div>
+      <p className="method-note">Năm cá nhân được tính bằng tháng sinh + ngày sinh + năm dương lịch, rút về 1–9; chu kỳ hiển thị bốn năm trước và sau năm đang chọn. Chủ đề chu kỳ là diễn giải biểu tượng, không phải dự báo sự kiện.</p>
+      <h3>Bộ số cá nhân hóa tham khảo cho {game}</h3>
+      <div className="personal-number-list">{numbers.map(item => <article key={item.value}><strong>{String(item.value).padStart(2, "0")}</strong><span>{item.sources.join(" · ")}</span></article>)}</div>
+      <p className="method-note">Các chỉ số được ánh xạ vào khoảng số của game; số còn thiếu được bổ sung bằng seed hồ sơ để tạo dãy duy nhất và tái lập được. Đây chỉ là lựa chọn cá nhân hóa/giải trí, không làm tăng xác suất trúng Vietlott.</p>
+    </>}
+  </section>;
+}
+
 function DailyGuidancePage() {
   const todayInVietnam = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const [date, setDate] = useState(todayInVietnam);

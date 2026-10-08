@@ -12,6 +12,8 @@ export function personalNumbers(chart: NumerologyChart, birth: Date, max: number
     [chart.lifePath, "Thần số học · Đường đời"], [chart.birthday, "Thần số học · Ngày sinh"],
     [chart.expression, "Thần số học · Biểu đạt"], [chart.soulUrge, "Thần số học · Linh hồn"],
     [chart.personality, "Thần số học · Nhân cách"], [chart.personalYear, "Thần số học · Năm cá nhân"],
+    [chart.attitude, "Thần số học · Thái độ"], [chart.balance, "Thần số học · Cân bằng"],
+    [chart.pinnacles[0]?.number ?? chart.lifePath, "Thần số học · Đỉnh cao 1"],
     [birth.getDate(), "Ngày sinh"], [birth.getMonth() + 1, "Tháng sinh"],
     [birth.getFullYear() % 100, "Năm sinh (2 chữ số cuối)"],
   ];

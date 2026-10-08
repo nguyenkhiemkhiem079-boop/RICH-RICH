@@ -15,6 +15,18 @@ describe("numerology", () => {
     expect(() => calculateNumerology("", new Date(1990, 0, 1))).toThrow();
     expect(() => calculateNumerology("A", new Date(Number.NaN))).toThrow();
   });
+  it("calculates report sections and a nine-year cycle deterministically", () => {
+    const result = calculateNumerology("Nguyễn Trần Gia Khiêm", new Date(2002, 8, 13), 2026);
+    expect(result.lifePath).toBe(8);
+    expect(result.attitude).toBe(4);
+    expect(result.personalYear).toBe(5);
+    expect(result.yearCycle).toHaveLength(9);
+    expect(result.yearCycle.map(x => x.year)).toEqual([2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030]);
+    expect(result.yearCycle.find(x => x.year === 2026)?.number).toBe(5);
+    expect(result.pinnacles).toHaveLength(4);
+    expect(result.arrows).toHaveLength(8);
+    expect(result.karmicLessons.every(value => value >= 1 && value <= 9)).toBe(true);
+  });
   it("returns unique numbers with provenance in legal range", () => {
     const chart = calculateNumerology("Nguyễn Thị Đặng", new Date(1990, 4, 23), 2026);
     const numbers = personalNumbers(chart, new Date(1990, 4, 23), 45, 6);
